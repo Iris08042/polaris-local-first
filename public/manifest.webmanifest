@@ -1,0 +1,22 @@
+{
+  "name": "Polaris 北极星",
+  "short_name": "Polaris",
+  "description": "一个能与你对话，也会把云端心跳消息带回同一段生活的房间。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icons/polaris-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/polaris-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

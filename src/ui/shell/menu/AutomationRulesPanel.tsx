@@ -3,6 +3,7 @@ import type { I18nTranslator } from '../../../i18n/translator';
 import { useI18n } from '../../../i18n/useI18n';
 import type { Conversation, Persona, PolarisTriggerRule, PolarisTriggerSchedule } from '../../../types/domain';
 import { Icon } from '../../Icon';
+import { HeartbeatInboxSettingsCard } from './HeartbeatInboxSettingsCard';
 
 type TriggerFormMode = 'daily' | 'interval';
 type ConversationSelectMode = PolarisTriggerRule['target']['conversationMode'];
@@ -276,6 +277,11 @@ export function AutomationRulesPanel({
 
   return (
     <div className={`automation-rules-panel ${lockedCollaboratorId ? 'automation-rules-panel--collaborator' : 'automation-rules-panel--menu'}`}>
+      <HeartbeatInboxSettingsCard
+        personas={personas}
+        conversations={conversations}
+        lockedCollaboratorId={lockedCollaboratorId}
+      />
       <section className="menu-section automation-form-section automation-rules-head-section">
         <div className="menu-section-head">
           <span className="menu-section-kicker">{t('settings.automation.rulesSection')}</span>

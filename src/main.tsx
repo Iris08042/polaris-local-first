@@ -14,6 +14,13 @@ import './styles/base.css';
 
 installGlobalClientErrorLogging();
 installClientDiagnosticsReporter();
+
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js');
+  });
+}
+
 const rootElement = document.getElementById('root');
 const bootRescueSurface = installBootRescueSurface({ root: rootElement });
 

@@ -13,6 +13,7 @@ import { useChatTriggerRuntime } from '../chat/useChatTriggerRuntime';
 import { useAppTriggerShortcutRuntime } from './useAppTriggerShortcutRuntime';
 import { useNativeTriggerNotifications } from './useNativeTriggerNotifications';
 import { selectChatConversations } from '../chat/liveConversationCatalog';
+import { useHeartbeatInboxRuntime } from '../heartbeat/useHeartbeatInboxRuntime';
 
 type TriggerConversationGenerationState = {
   sending: boolean;
@@ -97,6 +98,11 @@ export function useAppTriggerRuntime({ chatRuntime, startupReady }: UseAppTrigge
     generationByConversationId: chatRuntime.generationByConversationId,
     store,
     runReply,
+    setCommandStatus: chatRuntime.setCommandStatus
+  });
+  useHeartbeatInboxRuntime({
+    startupReady: triggerRuntimeReady,
+    store,
     setCommandStatus: chatRuntime.setCommandStatus
   });
   useAppTriggerShortcutRuntime({

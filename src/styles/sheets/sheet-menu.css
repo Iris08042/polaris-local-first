@@ -983,6 +983,24 @@
   color: var(--sheet-readable-text);
   font-size: var(--type-small);
 }
+.heartbeat-inbox-settings__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.heartbeat-inbox-settings__head > div {
+  min-width: 0;
+}
+.heartbeat-inbox-settings__form {
+  margin-top: 16px;
+}
+.heartbeat-inbox-settings__status {
+  margin: 0;
+  color: var(--sheet-readable-muted);
+  font-size: var(--type-caption);
+  line-height: 1.5;
+}
 
 @media (max-width: 520px) {
   .menu-quick-skins-head {
