@@ -1002,6 +1002,168 @@
   line-height: 1.5;
 }
 
+.heartbeat-automation-panel {
+  gap: 18px;
+}
+.heartbeat-policy,
+.heartbeat-policy-state {
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--surface) 70%, rgba(255,255,255,0.18));
+  color: var(--sheet-readable-text);
+}
+.heartbeat-policy {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+.heartbeat-policy-state {
+  padding: 18px;
+  color: var(--sheet-readable-muted);
+}
+.heartbeat-policy-state--error {
+  color: #a94a4a;
+}
+.heartbeat-policy__header,
+.heartbeat-policy__section-head,
+.heartbeat-policy__profile-head,
+.heartbeat-policy__schedule-head,
+.heartbeat-policy__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.heartbeat-policy__header,
+.heartbeat-policy__section-head {
+  justify-content: space-between;
+}
+.heartbeat-policy__header h3,
+.heartbeat-policy__section h4 {
+  margin: 0;
+}
+.heartbeat-policy__header p,
+.heartbeat-policy__section-head p,
+.heartbeat-policy__silent,
+.heartbeat-policy__empty {
+  margin: 5px 0 0;
+  color: var(--sheet-readable-muted);
+  font-size: var(--type-caption);
+  line-height: 1.5;
+}
+.heartbeat-policy__active {
+  padding: 13px 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent-soft) 46%, transparent);
+  color: var(--sheet-readable-muted);
+  font-size: var(--type-caption);
+}
+.heartbeat-policy__active strong {
+  color: var(--accent);
+}
+.heartbeat-policy__section {
+  display: grid;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-solid) 56%, transparent);
+}
+.heartbeat-policy label {
+  display: grid;
+  gap: 6px;
+  color: var(--sheet-readable-muted);
+  font-size: var(--type-caption);
+}
+.heartbeat-policy .ps-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--surface-solid) 76%, transparent);
+  color: var(--sheet-readable-text);
+}
+.heartbeat-policy__row,
+.heartbeat-policy__thresholds {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.heartbeat-policy__thresholds {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.heartbeat-policy__profiles,
+.heartbeat-policy__schedules {
+  display: grid;
+  gap: 10px;
+}
+.heartbeat-policy__profile,
+.heartbeat-policy__schedule {
+  display: grid;
+  gap: 12px;
+  padding: 13px;
+  border-radius: 15px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+}
+.heartbeat-policy__profile-head .ps-input,
+.heartbeat-policy__schedule-head .ps-input {
+  min-width: 0;
+}
+.heartbeat-policy__schedule-head .ps-input:first-of-type {
+  flex: 1 1 auto;
+}
+.heartbeat-policy__schedule-head .ps-input:nth-of-type(2) {
+  flex: 0 1 140px;
+}
+.heartbeat-policy__delete {
+  border: 0;
+  background: transparent;
+  color: #a95353;
+  cursor: pointer;
+}
+.heartbeat-policy__days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+.heartbeat-policy__days button {
+  min-width: 0;
+  padding: 7px 2px;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--sheet-readable-muted);
+}
+.heartbeat-policy__days button.is-active {
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.heartbeat-policy__switch {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+}
+.heartbeat-policy__switch input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+.heartbeat-policy__save {
+  min-height: 46px;
+  border: 0;
+  border-radius: 15px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.heartbeat-policy__save:disabled {
+  opacity: 0.6;
+}
+
 @media (max-width: 520px) {
   .menu-quick-skins-head {
     align-items: flex-start;
@@ -1027,5 +1189,25 @@
 
   .automation-rule-actions .mcp-btn {
     flex: 1 1 88px;
+  }
+
+  .heartbeat-policy {
+    padding: 12px;
+  }
+  .heartbeat-policy__header,
+  .heartbeat-policy__section-head,
+  .heartbeat-policy__schedule-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .heartbeat-policy__actions {
+    flex-wrap: wrap;
+  }
+  .heartbeat-policy__row,
+  .heartbeat-policy__thresholds {
+    grid-template-columns: 1fr;
+  }
+  .heartbeat-policy__schedule-head .ps-input:nth-of-type(2) {
+    flex-basis: auto;
   }
 }
