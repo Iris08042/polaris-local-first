@@ -63,9 +63,13 @@ function connection() {
   return config;
 }
 
+export function heartbeatPolicyEndpoint(inboxEndpoint: string) {
+  return `${inboxEndpoint.replace(/\/inbox$/, '')}/policy`;
+}
+
 async function requestPolicy(method: 'GET' | 'PUT', policy?: HeartbeatPolicy) {
   const config = connection();
-  const response = await fetch(`${config.endpoint}/policy`, {
+  const response = await fetch(heartbeatPolicyEndpoint(config.endpoint), {
     method,
     headers: {
       Authorization: `Bearer ${config.token}`,
