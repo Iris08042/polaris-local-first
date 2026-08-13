@@ -32,12 +32,14 @@ import {
 } from './workspaceReferenceDocContentPersistence';
 import type { Conversation, Persona } from '../types/domain';
 import type { StoreTransferProgressReporter } from './storeImportProgress';
+import { readBackupLocalStorage, type BackupLocalStorageEntry } from './storeBrowserLocalStorageTransfer';
 
 export const SPACE_STORE_KEY = 'polaris-space-store-v1';
 export const SPACE_STORE_VERSION = 19;
 export const ASSET_INDEX_PATH = 'assets/index.json';
 export const PERSONA_MEMORY_DOC_CONTENT_PATH = 'stores/persona-memory-doc-content.json';
 export const EXPORT_REPORT_PATH = 'export-report.json';
+export const BROWSER_LOCAL_STORAGE_PATH = 'stores/browser-local-storage.json';
 
 export type ExportManifest = {
   format: 'polaris-export';
@@ -51,6 +53,7 @@ export type ExportManifest = {
     persona: 'stores/persona.json';
     personaMemoryDocContent?: typeof PERSONA_MEMORY_DOC_CONTENT_PATH;
     runtime: 'stores/runtime.json';
+    browserLocalStorage?: typeof BROWSER_LOCAL_STORAGE_PATH;
   };
   assets: {
     count: number;
@@ -118,6 +121,7 @@ export type StructuredExportSnapshot = {
   personaState?: ExportPersonaState;
   personaMemoryDocContent?: PersonaMemoryDocContentPayload | null;
   runtimeState?: RuntimePayload;
+  browserLocalStorage?: BackupLocalStorageEntry[];
   assetEntries?: AssetExportEntry[];
 };
 
@@ -315,7 +319,8 @@ async function readStructuredExportStores(
     collectionState,
     personaState: exportPersonaState,
     personaMemoryDocContent: exportPersonaMemoryDocContent,
-    runtimeState
+    runtimeState,
+    browserLocalStorage: snapshot.browserLocalStorage ?? readBackupLocalStorage()
   };
 }
 
@@ -356,6 +361,7 @@ async function createStructuredExportZip(
   zip.file('stores/persona.json', jsonEntry(stores.personaState));
   zip.file(PERSONA_MEMORY_DOC_CONTENT_PATH, jsonEntry(stores.personaMemoryDocContent));
   zip.file('stores/runtime.json', jsonEntry(stores.runtimeState));
+  zip.file(BROWSER_LOCAL_STORAGE_PATH, jsonEntry(stores.browserLocalStorage));
 
   const assetIndex: AssetIndexEntry[] = [];
   options.onProgress?.({
@@ -385,7 +391,8 @@ async function createStructuredExportZip(
       collection: 'stores/collection.json',
       persona: 'stores/persona.json',
       personaMemoryDocContent: PERSONA_MEMORY_DOC_CONTENT_PATH,
-      runtime: 'stores/runtime.json'
+      runtime: 'stores/runtime.json',
+      browserLocalStorage: BROWSER_LOCAL_STORAGE_PATH
     },
     assets: {
       count: assets.length,
@@ -624,6 +631,7 @@ export async function streamStructuredExportPackageEntries(
   await handlers.onTextEntry('stores/persona.json', jsonEntry(stores.personaState));
   await handlers.onTextEntry(PERSONA_MEMORY_DOC_CONTENT_PATH, jsonEntry(stores.personaMemoryDocContent));
   await handlers.onTextEntry('stores/runtime.json', jsonEntry(stores.runtimeState));
+  await handlers.onTextEntry(BROWSER_LOCAL_STORAGE_PATH, jsonEntry(stores.browserLocalStorage));
 
   const assetIndex: AssetIndexEntry[] = [];
   const report: ExportReport = {
@@ -655,7 +663,8 @@ export async function streamStructuredExportPackageEntries(
       collection: 'stores/collection.json',
       persona: 'stores/persona.json',
       personaMemoryDocContent: PERSONA_MEMORY_DOC_CONTENT_PATH,
-      runtime: 'stores/runtime.json'
+      runtime: 'stores/runtime.json',
+      browserLocalStorage: BROWSER_LOCAL_STORAGE_PATH
     },
     assets: {
       count: assetIndex.length,

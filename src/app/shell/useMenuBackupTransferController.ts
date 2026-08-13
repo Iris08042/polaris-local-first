@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { isWebDavConfigured } from '../../engines/webdavBackup';
 import {
   canUseNativeSystemBackupFiles,
   getSystemBackupAvailability,
   importBackupViaSystemFiles
 } from '../../native/systemBackupFiles';
-import { downloadLatestBackupFromWebDav, uploadBackupToWebDav } from '../../native/webdavBackup';
 import {
   formatStoreTransferProgress,
   resolveStoreTransferProgressPercent,
@@ -17,6 +15,14 @@ import {
   formatCompleteBackupExportError
 } from './completeBackupExport';
 import { formatStoreImportResult } from '../../stores/storeImportResult';
+import { downloadCloudBackup, fetchCloudBackupStatus, uploadCloudBackup, type CloudBackupStatus } from '../backup/cloudBackupClient';
+import {
+  isCloudBackupConfigured,
+  markCloudBackupCompletedToday,
+  readCloudBackupConfig,
+  writeCloudBackupConfig,
+  type CloudBackupConfig
+} from '../backup/cloudBackupSettings';
 
 type MenuBackupTransferUi = {
   alert: (message: string) => void;
@@ -25,18 +31,15 @@ type MenuBackupTransferUi = {
   triggerBrowserImportPicker: () => void;
 };
 
-type MenuBackupTransferWebDavConfig = Parameters<typeof isWebDavConfigured>[0];
-
 type UseMenuBackupTransferControllerArgs = {
   ui: MenuBackupTransferUi;
-  webdav: MenuBackupTransferWebDavConfig;
 };
 
 export function formatMenuLocalBackupError(error: unknown, action: '导出' | '导入') {
   if (action === '导出') return formatCompleteBackupExportError(error);
   const message = error instanceof Error ? error.message : '';
   if (/SystemFile/i.test(message) || /not implemented on ios/i.test(message)) {
-    return '当前 App 版暂时无法使用本地备份包，请先使用 WebDAV 导入备份包。';
+    return '当前 App 版暂时无法使用本地备份包，请改用云端备份。';
   }
   if (/I\/O read operation failed|读取导入文件失败/i.test(message)) {
     return 'iOS 没能读到刚选中的备份文件。请先在“文件”App 或 iCloud 里确认备份包已经下载完成，再重新选择一次；这一步还没有开始解析备份内容。';
@@ -66,15 +69,15 @@ async function importBackupData(file: Blob, onProgress: (progress: StoreTransfer
 }
 
 export function useMenuBackupTransferController({
-  ui,
-  webdav
+  ui
 }: UseMenuBackupTransferControllerArgs) {
   const [exportingData, setExportingData] = useState(false);
   const [importingData, setImportingData] = useState(false);
   const [exportProgress, setExportProgress] = useState<StoreTransferProgress | null>(null);
   const [importProgress, setImportProgress] = useState<StoreTransferProgress | null>(null);
-  const [exportingWebDav, setExportingWebDav] = useState(false);
-  const [importingWebDav, setImportingWebDav] = useState(false);
+  const [cloudBackupConfig, setCloudBackupConfigState] = useState<CloudBackupConfig>(() => readCloudBackupConfig());
+  const [cloudBackupStatus, setCloudBackupStatus] = useState<CloudBackupStatus | null>(null);
+  const [cloudBackupBusy, setCloudBackupBusy] = useState(false);
 
   const systemBackupAvailability = getSystemBackupAvailability();
   const {
@@ -124,7 +127,7 @@ export function useMenuBackupTransferController({
 
   const importData = async () => {
     if (systemBackupAvailability === 'unavailable') {
-      ui.alert('当前 App 版请先使用 WebDAV 导入备份包。');
+      ui.alert('当前 App 版暂时无法使用本地备份包，请改用云端备份。');
       return;
     }
 
@@ -154,45 +157,64 @@ export function useMenuBackupTransferController({
     }
   };
 
-  const exportToWebDav = async () => {
+  const setCloudBackupConfig = (patch: Partial<CloudBackupConfig>) => {
+    const next = writeCloudBackupConfig({ ...cloudBackupConfig, ...patch });
+    setCloudBackupConfigState(next);
+    if (!isCloudBackupConfigured(next)) setCloudBackupStatus(null);
+  };
+
+  const refreshCloudBackupStatus = async () => {
     try {
-      setExportingWebDav(true);
-      setExportProgress({ message: '读取对话和设置' });
-      const { blob, fileName } = await buildCurrentExportPackage({ onProgress: setExportProgress });
-      setExportProgress({ message: '上传 WebDAV' });
-      await uploadBackupToWebDav(webdav, blob, fileName);
-      ui.alert(`已上传到 WebDAV：${fileName}`);
+      setCloudBackupBusy(true);
+      setCloudBackupStatus(await fetchCloudBackupStatus(cloudBackupConfig));
     } catch (error) {
-      const message = error instanceof Error ? error.message : '上传 WebDAV 失败';
-      ui.alert(message);
+      ui.alert(error instanceof Error ? error.message : '读取云备份状态失败');
     } finally {
-      setExportingWebDav(false);
+      setCloudBackupBusy(false);
+    }
+  };
+
+  const uploadToCloud = async () => {
+    try {
+      setCloudBackupBusy(true);
+      setExportProgress({ message: '生成完整备份' });
+      const { blob } = await buildCurrentExportPackage({ onProgress: setExportProgress });
+      setExportProgress({ message: '上传到腾讯云' });
+      await uploadCloudBackup(cloudBackupConfig, blob);
+      markCloudBackupCompletedToday();
+      setCloudBackupStatus(await fetchCloudBackupStatus(cloudBackupConfig));
+      ui.alert('完整备份已保存到腾讯云。');
+    } catch (error) {
+      ui.alert(error instanceof Error ? error.message : '上传云备份失败');
+    } finally {
+      setCloudBackupBusy(false);
       setExportProgress(null);
     }
   };
 
-  const importFromWebDav = async () => {
+  const restoreFromCloud = async (backupId: string) => {
+    if (!ui.confirm('将用选中的云端备份覆盖当前设备全部数据，确定吗？')) return;
     try {
-      setImportingWebDav(true);
-      if (!ui.confirm('会从 WebDAV 拉取最近一份备份，并覆盖当前数据，确定吗？')) return;
-      const file = await downloadLatestBackupFromWebDav(webdav);
+      setCloudBackupBusy(true);
+      const file = await downloadCloudBackup(cloudBackupConfig, backupId);
       const result = await importBackupData(file, setImportProgress);
-      ui.alert(formatStoreImportResult(result));
+      if (result.status === 'complete') markCloudBackupCompletedToday();
+      ui.alert(`${formatStoreImportResult(result)}\n重新打开应用后，心跳等独立设置也会生效。`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : '读取 WebDAV 备份失败';
-      ui.alert(message);
+      ui.alert(error instanceof Error ? error.message : '恢复云备份失败');
     } finally {
-      setImportingWebDav(false);
+      setCloudBackupBusy(false);
       setImportProgress(null);
     }
   };
 
   return {
-    readyForWebDav: isWebDavConfigured(webdav),
+    cloudBackupConfig,
+    cloudBackupConfigured: isCloudBackupConfigured(cloudBackupConfig),
+    cloudBackupStatus,
+    cloudBackupBusy,
     exportingData,
     importingData,
-    exportingWebDav,
-    importingWebDav,
     localBackupAvailable,
     localExportDetail: visibleLocalExportDetail,
     localImportDetail: visibleLocalImportDetail,
@@ -204,7 +226,9 @@ export function useMenuBackupTransferController({
     },
     onExportData: exportData,
     onImportData: importData,
-    onExportToWebDav: exportToWebDav,
-    onImportFromWebDav: importFromWebDav
+    onSetCloudBackupConfig: setCloudBackupConfig,
+    onRefreshCloudBackupStatus: refreshCloudBackupStatus,
+    onUploadToCloud: uploadToCloud,
+    onRestoreFromCloud: restoreFromCloud
   };
 }

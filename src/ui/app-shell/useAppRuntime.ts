@@ -20,6 +20,7 @@ import {
 } from '../developer/debugSurfaceState';
 import { usePersistenceReadFailureNotice } from './usePersistenceReadFailureNotice';
 import type { Conversation } from '../../types/domain';
+import { useCloudBackupRuntime } from '../../app/backup/useCloudBackupRuntime';
 
 function readAssetGovernanceDebugEnabled() {
   return readDebugSurfaceEnabled({ developerMode: true, queryParams: ['debugAssets'] });
@@ -60,6 +61,7 @@ export function useAppRuntime({
     ...collectionOwnershipBackfill
   });
   useAppTriggerRuntime({ chatRuntime, startupReady: backgroundRuntimeReady });
+  useCloudBackupRuntime({ enabled: backgroundRuntimeReady });
 
   const persistenceReadFailureNotice = usePersistenceReadFailureNotice(
     backgroundRuntimeReady

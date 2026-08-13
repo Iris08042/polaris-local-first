@@ -1,53 +1,52 @@
-import type { WebDavConfig } from '../../../types/domain';
 import { useI18n } from '../../../i18n';
 import { HelpHint } from '../../HelpHint';
 import { Icon } from '../../Icon';
 import { MenuSheetItem } from './MenuSheetItem';
+import type { CloudBackupConfig } from '../../../app/backup/cloudBackupSettings';
+import type { CloudBackupStatus } from '../../../app/backup/cloudBackupClient';
 
 type MenuBackupPageProps = {
-  webdav: WebDavConfig;
-  readyForWebDav: boolean;
   busy: boolean;
   localBackupAvailable: boolean;
   exportingData: boolean;
   importingData: boolean;
-  exportingWebDav: boolean;
-  importingWebDav: boolean;
+  cloudBackupConfig: CloudBackupConfig;
+  cloudBackupConfigured: boolean;
+  cloudBackupStatus: CloudBackupStatus | null;
+  cloudBackupBusy: boolean;
   localExportDetail: string;
   localImportDetail: string;
   localExportProgress: number | null;
   localImportProgress: number | null;
   onBack: () => void;
-  onSetWebDavEndpoint: (value: string) => void;
-  onSetWebDavUsername: (value: string) => void;
-  onSetWebDavPassword: (value: string) => void;
   onExportData: () => void;
   onImportData: () => void;
-  onExportToWebDav: () => void;
-  onImportFromWebDav: () => void;
+  onSetCloudBackupConfig: (patch: Partial<CloudBackupConfig>) => void;
+  onRefreshCloudBackupStatus: () => void;
+  onUploadToCloud: () => void;
+  onRestoreFromCloud: (backupId: string) => void;
 };
 
 export function MenuBackupPage({
-  webdav,
-  readyForWebDav,
   busy,
   localBackupAvailable,
   exportingData,
   importingData,
-  exportingWebDav,
-  importingWebDav,
+  cloudBackupConfig,
+  cloudBackupConfigured,
+  cloudBackupStatus,
+  cloudBackupBusy,
   localExportDetail,
   localImportDetail,
   localExportProgress,
   localImportProgress,
   onBack,
-  onSetWebDavEndpoint,
-  onSetWebDavUsername,
-  onSetWebDavPassword,
   onExportData,
   onImportData,
-  onExportToWebDav,
-  onImportFromWebDav
+  onSetCloudBackupConfig,
+  onRefreshCloudBackupStatus,
+  onUploadToCloud,
+  onRestoreFromCloud
 }: MenuBackupPageProps) {
   const { t } = useI18n();
 
@@ -100,62 +99,69 @@ export function MenuBackupPage({
 
       <section className="menu-section">
         <div className="menu-section-head">
-          <span className="menu-section-kicker menu-section-kicker-row">
-            WebDAV
-            <HelpHint
-              label="WebDAV"
-              text={t('settings.backup.webdavHelp')}
-            />
-          </span>
-          <p className="menu-section-note">{t('settings.backup.webdavNote')}</p>
+          <span className="menu-section-kicker">无尽夏完整云备份</span>
+          <p className="menu-section-note">
+            每天第一次打开无尽夏时上传一份完整备份；当天不再重复上传。
+          </p>
         </div>
         <div className="menu-webdav-section">
           <div className="settings-form">
-            <label>{t('settings.backup.webdavUrl')}</label>
+            <label className="settings-checkbox-row">
+              <input
+                type="checkbox"
+                checked={cloudBackupConfig.enabled}
+                onChange={(event) => onSetCloudBackupConfig({ enabled: event.target.checked })}
+              />
+              每日首次打开时自动备份
+            </label>
+            <label>云备份地址</label>
             <input
-              value={webdav.endpoint}
-              onChange={(event) => onSetWebDavEndpoint(event.target.value)}
-              placeholder="https://dav.jianguoyun.com/dav/Polaris"
+              value={cloudBackupConfig.endpoint}
+              onChange={(event) => onSetCloudBackupConfig({ endpoint: event.target.value })}
+              placeholder="https://polaris.yichen888.top/gateway/api/polaris/backup"
             />
-            <label>{t('settings.backup.webdavUsername')}</label>
-            <input
-              value={webdav.username}
-              onChange={(event) => onSetWebDavUsername(event.target.value)}
-              placeholder={t('settings.backup.webdavUsernamePlaceholder')}
-            />
-            <label>{t('settings.backup.webdavPassword')}</label>
+            <label>备份密钥</label>
             <input
               type="password"
-              value={webdav.password}
-              onChange={(event) => onSetWebDavPassword(event.target.value)}
-              placeholder={t('settings.backup.webdavPasswordPlaceholder')}
+              value={cloudBackupConfig.token}
+              onChange={(event) => onSetCloudBackupConfig({ token: event.target.value })}
+              placeholder="只保存在当前设备和完整备份中"
             />
           </div>
           <div className="provider-inline-actions menu-webdav-actions">
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={onExportToWebDav}
-              disabled={busy || !readyForWebDav}
-            >
-              {exportingWebDav ? t('settings.backup.webdavUploading') : t('settings.backup.webdavUpload')}
+            <button type="button" className="btn-secondary" onClick={onUploadToCloud} disabled={busy || !cloudBackupConfigured}>
+              立即完整备份
             </button>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={onImportFromWebDav}
-              disabled={busy || !readyForWebDav}
-            >
-              {importingWebDav ? t('settings.backup.webdavReading') : t('settings.backup.webdavRestore')}
+            <button type="button" className="btn-secondary" onClick={onRefreshCloudBackupStatus} disabled={busy || !cloudBackupConfigured}>
+              {cloudBackupBusy ? '读取中…' : '查看云端备份'}
             </button>
           </div>
           <div className="settings-note">
-            {readyForWebDav
-              ? t('settings.backup.webdavReadyNote')
-              : t('settings.backup.webdavMissingNote')}
+            {cloudBackupStatus?.backups[0]
+              ? `最新：${new Date(cloudBackupStatus.backups[0].uploadedAt).toLocaleString()} · ${(cloudBackupStatus.backups[0].bytes / 1024 / 1024).toFixed(1)} MB`
+              : cloudBackupConfigured
+                ? '密钥已填写。首次点击“立即完整备份”后，云端才会有可恢复数据。'
+                : '先在腾讯云配置独立备份密钥，再把相同密钥填在这里。'}
           </div>
+          {cloudBackupStatus?.backups.length ? (
+            <div className="settings-form">
+              <label>最近三次完整备份</label>
+              {cloudBackupStatus.backups.map((backup, index) => (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  key={backup.id}
+                  onClick={() => onRestoreFromCloud(backup.id)}
+                  disabled={busy}
+                >
+                  {index === 0 ? '恢复最新' : '恢复'} · {new Date(backup.uploadedAt).toLocaleString()}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       </section>
+
     </div>
   );
 }

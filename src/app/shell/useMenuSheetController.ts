@@ -63,7 +63,6 @@ export function useMenuSheetController({
   const copy = useI18n();
   const api = useRuntimeStore(selectRuntimeApi);
   const providers = useRuntimeStore((state) => state.providers);
-  const webdav = useRuntimeStore((state) => state.webdav);
   const search = useRuntimeStore((state) => state.search);
   const conversationSummaryModel = useRuntimeStore((state) => state.conversationSummaryModel);
   const memoryVectorRetrieval = useRuntimeStore((state) => state.memoryVectorRetrieval);
@@ -81,7 +80,6 @@ export function useMenuSheetController({
   const personas = usePersonaStore((state) => state.personas);
   const activeCollaboratorId = usePersonaStore((state) => state.activeCollaboratorId);
   const createProvider = useRuntimeStore((state) => state.createProvider);
-  const setWebDavConfig = useRuntimeStore((state) => state.setWebDavConfig);
   const setSearchConfig = useRuntimeStore((state) => state.setSearchConfig);
   const setConversationSummaryModel = useRuntimeStore((state) => state.setConversationSummaryModel);
   const setMemoryVectorRetrieval = useRuntimeStore((state) => state.setMemoryVectorRetrieval);
@@ -175,7 +173,7 @@ export function useMenuSheetController({
     });
   }, [open, page]);
 
-  const backupTransfer = useMenuBackupTransferController({ ui, webdav });
+  const backupTransfer = useMenuBackupTransferController({ ui });
   const fontLibrary = useMenuFontLibraryController({
     ui,
     customization,
@@ -193,8 +191,7 @@ export function useMenuSheetController({
   });
   const busy = backupTransfer.exportingData
     || backupTransfer.importingData
-    || backupTransfer.exportingWebDav
-    || backupTransfer.importingWebDav;
+    || backupTransfer.cloudBackupBusy;
   const androidUpdate = useMenuAndroidUpdateController({ ui });
   const tokenUsageSummary = useMemo(() => {
     if (!shouldBuildMenuTokenUsageSummary(open, page)) return EMPTY_MENU_TOKEN_USAGE_SUMMARY;
@@ -251,7 +248,6 @@ export function useMenuSheetController({
     page,
     api,
     providers,
-    webdav,
     search,
     conversationSummaryModel: generationSettings.conversationSummaryModel,
     memoryVectorRetrieval: generationSettings.memoryVectorRetrieval,
@@ -281,11 +277,12 @@ export function useMenuSheetController({
     providerRouteLabelKey: gateway.providerRouteLabelKey,
     providerProtocolLabelKey: gateway.providerProtocolLabelKey,
     busy,
-    readyForWebDav: backupTransfer.readyForWebDav,
+    cloudBackupConfig: backupTransfer.cloudBackupConfig,
+    cloudBackupConfigured: backupTransfer.cloudBackupConfigured,
+    cloudBackupStatus: backupTransfer.cloudBackupStatus,
+    cloudBackupBusy: backupTransfer.cloudBackupBusy,
     exportingData: backupTransfer.exportingData,
     importingData: backupTransfer.importingData,
-    exportingWebDav: backupTransfer.exportingWebDav,
-    importingWebDav: backupTransfer.importingWebDav,
     enabledToolGroupsCount: toolbox.enabledToolGroupsCount,
     desktopLocalAvailable: toolbox.desktopLocalAvailable,
     onRefreshPersonalDataStatus: toolbox.onRefreshPersonalDataStatus,
@@ -300,9 +297,6 @@ export function useMenuSheetController({
     onSetPage: setPage,
     onOpenApiFromRoot: gateway.onOpenApiFromRoot,
     onOpenApiFromGateway: gateway.onOpenApiFromGateway,
-    onSetWebDavEndpoint: (value: string) => setWebDavConfig({ endpoint: value }),
-    onSetWebDavUsername: (value: string) => setWebDavConfig({ username: value }),
-    onSetWebDavPassword: (value: string) => setWebDavConfig({ password: value }),
     onSetSearchConfig: setSearchConfig,
     onSetConversationSummaryModel: generationSettings.onSetConversationSummaryModel,
     onSetMemoryVectorRetrieval: generationSettings.onSetMemoryVectorRetrieval,
@@ -339,7 +333,9 @@ export function useMenuSheetController({
     onImportFontBrowserFileSelected: fontLibrary.onImportFontBrowserFileSelected,
     onExportData: backupTransfer.onExportData,
     onImportData: backupTransfer.onImportData,
-    onExportToWebDav: backupTransfer.onExportToWebDav,
-    onImportFromWebDav: backupTransfer.onImportFromWebDav
+    onSetCloudBackupConfig: backupTransfer.onSetCloudBackupConfig,
+    onRefreshCloudBackupStatus: backupTransfer.onRefreshCloudBackupStatus,
+    onUploadToCloud: backupTransfer.onUploadToCloud,
+    onRestoreFromCloud: backupTransfer.onRestoreFromCloud
   };
 }

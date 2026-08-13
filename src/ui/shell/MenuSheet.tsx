@@ -142,33 +142,34 @@ export function MenuSheet({
         ) : null}
         {visiblePage === 'backup' ? (
           <MenuBackupPage
-            webdav={controller.webdav}
-            readyForWebDav={controller.readyForWebDav}
             busy={controller.busy}
             localBackupAvailable={controller.localBackupAvailable}
             exportingData={controller.exportingData}
             importingData={controller.importingData}
-            exportingWebDav={controller.exportingWebDav}
-            importingWebDav={controller.importingWebDav}
+            cloudBackupConfig={controller.cloudBackupConfig}
+            cloudBackupConfigured={controller.cloudBackupConfigured}
+            cloudBackupStatus={controller.cloudBackupStatus}
+            cloudBackupBusy={controller.cloudBackupBusy}
             localExportDetail={controller.localExportDetail}
             localImportDetail={controller.localImportDetail}
             localExportProgress={controller.localExportProgress}
             localImportProgress={controller.localImportProgress}
             onBack={() => controller.onSetPage('root')}
-            onSetWebDavEndpoint={controller.onSetWebDavEndpoint}
-            onSetWebDavUsername={controller.onSetWebDavUsername}
-            onSetWebDavPassword={controller.onSetWebDavPassword}
             onExportData={() => {
               void controller.onExportData();
             }}
             onImportData={() => {
               void controller.onImportData();
             }}
-            onExportToWebDav={() => {
-              void controller.onExportToWebDav();
+            onSetCloudBackupConfig={controller.onSetCloudBackupConfig}
+            onRefreshCloudBackupStatus={() => {
+              void controller.onRefreshCloudBackupStatus();
             }}
-            onImportFromWebDav={() => {
-              void controller.onImportFromWebDav();
+            onUploadToCloud={() => {
+              void controller.onUploadToCloud();
+            }}
+            onRestoreFromCloud={(snapshotDate) => {
+              void controller.onRestoreFromCloud(snapshotDate);
             }}
           />
         ) : null}

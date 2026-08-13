@@ -26,6 +26,7 @@ import { clearLegacyLocalDataKvShadowIfStoreBackendInstalled } from './localData
 import { restoreStructuredImportToLocalDataRepository } from './storeImportLocalDataRestore';
 import {
   ASSET_INDEX_PATH,
+  BROWSER_LOCAL_STORAGE_PATH,
   PERSONA_MEMORY_DOC_CONTENT_PATH,
   SPACE_STORE_KEY,
   SPACE_STORE_VERSION,
@@ -37,8 +38,16 @@ import type { StoreImportProgressReporter } from './storeImportProgress';
 import type { Persona, ProjectFile, WorkspaceReferenceDoc } from '../types/domain';
 import type { StoreImportDomainFailure, StoreImportResult } from './storeImportResult';
 import { fingerprintDiagnosticId, reportPersistenceError } from '../infrastructure/persistenceDiagnostics';
+import {
+  readBackupLocalStorage,
+  replaceBackupLocalStorage,
+  restoreBackupLocalStorage,
+  validateBackupLocalStorage,
+  type BackupLocalStorageEntry
+} from './storeBrowserLocalStorageTransfer';
 
-const LOCAL_STORAGE_PREFIX = 'polaris';
+export type ImportLocalStorageEntry = BackupLocalStorageEntry;
+
 const ASSET_READ_CONCURRENCY = 4;
 
 type ImportStructuredExportPackageOptions = {
@@ -60,55 +69,8 @@ type ZipReader = {
   file: (path: string) => ZipTextOrBlobFile | null;
 };
 
-export type ImportLocalStorageEntry = {
-  key: string;
-  value: string;
-};
-
 function restoreFailureReason(error: unknown) {
   return error instanceof Error ? error.message : String(error);
-}
-
-function readPolarisLocalStorage(): ImportLocalStorageEntry[] {
-  if (typeof window === 'undefined') return [];
-  const entries: ImportLocalStorageEntry[] = [];
-  for (let index = 0; index < window.localStorage.length; index += 1) {
-    const key = window.localStorage.key(index);
-    if (key?.startsWith(LOCAL_STORAGE_PREFIX)) {
-      const value = window.localStorage.getItem(key);
-      if (value !== null) entries.push({ key, value });
-    }
-  }
-  return entries;
-}
-
-function replacePolarisLocalStorage(entries: ImportLocalStorageEntry[]) {
-  if (typeof window === 'undefined') return;
-  const previous = entries.map(({ key }) => ({ key, value: window.localStorage.getItem(key) }));
-  try {
-    for (const entry of entries) {
-      window.localStorage.setItem(entry.key, entry.value);
-    }
-  } catch (error) {
-    try {
-      for (const entry of previous) {
-        if (entry.value === null) window.localStorage.removeItem(entry.key);
-        else window.localStorage.setItem(entry.key, entry.value);
-      }
-    } catch (rollbackError) {
-      throw new Error(`localStorage 写入失败且旧值恢复失败：${String(rollbackError)}；原始错误：${String(error)}`);
-    }
-    throw error;
-  }
-}
-
-function restorePolarisLocalStorageSnapshot(
-  entries: ImportLocalStorageEntry[],
-  touchedKeys: string[]
-) {
-  if (typeof window === 'undefined') return;
-  for (const key of touchedKeys) window.localStorage.removeItem(key);
-  for (const entry of entries) window.localStorage.setItem(entry.key, entry.value);
 }
 
 async function refreshImportedStoresBestEffort() {
@@ -151,6 +113,10 @@ function validateManifest(value: unknown): ExportManifest {
       && manifest.stores.personaMemoryDocContent !== PERSONA_MEMORY_DOC_CONTENT_PATH
     )
     || manifest.stores?.runtime !== 'stores/runtime.json'
+    || (
+      manifest.stores?.browserLocalStorage !== undefined
+      && manifest.stores.browserLocalStorage !== BROWSER_LOCAL_STORAGE_PATH
+    )
   ) {
     throw new Error('导出包缺少必要 stores 索引');
   }
@@ -459,6 +425,14 @@ export async function importStructuredExportPackage(
   const runtimeState = validateRuntimeState(
     parseJsonFile(await readZipTextFile(zip, manifest.stores.runtime, manifest.stores.runtime), manifest.stores.runtime)
   );
+  const browserLocalStorage = manifest.stores.browserLocalStorage
+    ? validateBackupLocalStorage(
+        parseJsonFile(
+          await readZipTextFile(zip, manifest.stores.browserLocalStorage, manifest.stores.browserLocalStorage),
+          manifest.stores.browserLocalStorage
+        )
+      )
+    : undefined;
   const parsedRuntimeState = parseJsonFile<Partial<RuntimePayload> & {
     screenshotDebugOverlayEnabled?: boolean;
     customization?: Partial<PersistedSpaceState['customization']>;
@@ -505,6 +479,7 @@ export async function importStructuredExportPackage(
     personaMemoryDocContent,
     runtimeState,
     spaceState: migratedSpaceState,
+    browserLocalStorage,
     assetEntries
   }, options);
 }
@@ -550,6 +525,9 @@ export async function importStructuredExportSnapshot(
     ? null
     : validatePersonaMemoryDocContent(snapshot.personaMemoryDocContent);
   const runtimeState = validateRuntimeState(snapshot.runtimeState);
+  const browserLocalStorage = snapshot.browserLocalStorage === undefined
+    ? undefined
+    : validateBackupLocalStorage(snapshot.browserLocalStorage);
   const assetEntries = validateStructuredAssetEntries(snapshot.assetEntries);
 
   options.onProgress?.({ message: '收束未保存数据' });
@@ -559,17 +537,20 @@ export async function importStructuredExportSnapshot(
   const skipDomains: Array<'space' | 'asset'> = [];
   const importCommittedAt = Date.now();
   const assetCommitId = `import-asset-${importCommittedAt}`;
-  const previousLocalStorage = readPolarisLocalStorage();
-  const importedLocalStorageEntries: ImportLocalStorageEntry[] = [{
+  const previousLocalStorage = readBackupLocalStorage();
+  const spaceLocalStorageEntry: BackupLocalStorageEntry = {
     key: SPACE_STORE_KEY,
     value: JSON.stringify({
       state: serializePersistedSpaceLocalState(spaceState),
       version: SPACE_STORE_VERSION
     })
-  }];
+  };
+  const importedLocalStorageEntries = browserLocalStorage
+    ? [...browserLocalStorage.filter((entry) => entry.key !== SPACE_STORE_KEY), spaceLocalStorageEntry]
+    : [spaceLocalStorageEntry];
   let localStorageApplied = false;
   try {
-    replacePolarisLocalStorage(importedLocalStorageEntries);
+    replaceBackupLocalStorage(importedLocalStorageEntries);
     localStorageApplied = true;
   } catch (error) {
     skipDomains.push('space');
@@ -634,10 +615,7 @@ export async function importStructuredExportSnapshot(
   }
 
   if (localStorageApplied && !restoreResult.restoredDomains.includes('space')) {
-    restorePolarisLocalStorageSnapshot(
-      previousLocalStorage,
-      importedLocalStorageEntries.map((entry) => entry.key)
-    );
+    restoreBackupLocalStorage(previousLocalStorage);
   }
   if (assetStage) {
     try {
