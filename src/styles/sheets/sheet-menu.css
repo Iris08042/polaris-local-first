@@ -1005,6 +1005,35 @@
 .heartbeat-automation-panel {
   gap: 18px;
 }
+.menu-automation-page {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
+}
+.menu-automation-page :is(
+  .heartbeat-automation-panel,
+  .heartbeat-inbox-settings,
+  .heartbeat-inbox-settings__form,
+  .heartbeat-policy,
+  .heartbeat-policy__section,
+  .heartbeat-policy__profile,
+  .heartbeat-policy__schedule
+) {
+  min-width: 0;
+  max-width: 100%;
+}
+.menu-automation-page :is(input, select, textarea, button) {
+  max-width: 100%;
+}
+.menu-automation-page :is(
+  .menu-section-note,
+  .heartbeat-inbox-settings__status,
+  .heartbeat-policy__note
+) {
+  overflow-wrap: anywhere;
+}
 .heartbeat-policy,
 .heartbeat-policy-state {
   border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);

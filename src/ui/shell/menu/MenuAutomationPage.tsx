@@ -38,7 +38,7 @@ export function MenuAutomationPage({
   const { t } = useI18n();
 
   return (
-    <div className="menu-sheet-page">
+    <div className="menu-sheet-page menu-automation-page">
       <div className="menu-sheet-header">
         <button type="button" className="menu-sheet-back" aria-label={t('settings.pageBack')} onClick={onBack}>
           <span className="menu-sheet-back-icon"><Icon name="chevron" size={26} /></span>
