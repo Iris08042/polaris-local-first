@@ -15,7 +15,7 @@
     "desktop:preview": "npm run build && node tools/open-polaris-desktop.mjs",
     "desktop:build": "node tools/build-polaris-desktop.mjs",
     "desktop:package": "npm run desktop:build && node tools/package-polaris-desktop.mjs",
-    "icons:polaris": "node tools/generate-polaris-icons.mjs",
+    "icons:endless": "node tools/generate-polaris-icons.mjs",
     "selfhost:typecheck": "tsc --noEmit -p tsconfig.selfhost.json",
     "selfhost:build": "tsc -p tsconfig.selfhost.json",
     "selfhost:prepare": "npm run build && npm run selfhost:build",

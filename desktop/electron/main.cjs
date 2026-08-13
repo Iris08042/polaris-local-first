@@ -9,7 +9,7 @@ const {
   resolveDesktopLocalWritablePath
 } = require('./desktopLocalPathBoundary.cjs');
 
-const APP_NAME = 'Polaris';
+const APP_NAME = 'endless';
 const DESKTOP_SCHEME = 'polaris';
 const MAINTENANCE_BACKUP_HOST = 'maintenance-backup';
 const MAINTENANCE_BACKUP_PATH = '/import.zip';
@@ -17,7 +17,7 @@ const DEV_SERVER_URL = resolveDevServerUrl();
 const KEEP_ALIVE_IN_BACKGROUND = resolveKeepAliveInBackground();
 const REMOTE_DEBUGGING_PORT = resolveRemoteDebuggingPort();
 const MAINTENANCE_IMPORT_BACKUP_PATH = resolveMaintenanceImportBackupPath();
-const TRAY_TITLE = process.platform === 'darwin' ? '✦ Polaris' : '';
+const TRAY_TITLE = process.platform === 'darwin' ? '✦ endless' : '';
 
 let mainWindow = null;
 let statusTray = null;
@@ -482,7 +482,7 @@ async function confirmDesktopLocalOperation(kind, details) {
     buttons: ['允许', '取消'],
     defaultId: 0,
     cancelId: 1,
-    title: 'Polaris 本机环境确认',
+    title: 'endless 本机环境确认',
     message: details.title,
     detail: details.detail,
     noLink: true
@@ -514,7 +514,7 @@ function registerDesktopLocalHostIpc() {
 
   ipcMain.handle('polaris-desktop-local:choose-root', async () => {
     const result = await dialog.showOpenDialog(mainWindow ?? undefined, {
-      title: '选择 Polaris 本地工作区',
+      title: '选择 endless 本地工作区',
       properties: ['openDirectory', 'createDirectory']
     });
     if (result.canceled || !result.filePaths[0]) {
@@ -557,7 +557,7 @@ function registerDesktopLocalHostIpc() {
   ipcMain.handle('polaris-desktop-local:list-directory', async (_event, input) => {
     const { root, targetPath } = resolveInsideTrustedRoot(input?.rootId, input?.relativePath);
     await confirmDesktopLocalOperation('list', {
-      title: '允许 Polaris 读取本机目录？',
+      title: '允许 endless 读取本机目录？',
       detail: targetPath
     });
     const entries = await fs.promises.readdir(targetPath, { withFileTypes: true });
@@ -580,7 +580,7 @@ function registerDesktopLocalHostIpc() {
   ipcMain.handle('polaris-desktop-local:read-workspace-files', async (_event, input) => {
     const root = findTrustedRoot(input?.rootId);
     await confirmDesktopLocalOperation('read', {
-      title: '允许 Polaris 同步读取本机工作区？',
+      title: '允许 endless 同步读取本机工作区？',
       detail: `${root.path}\n\n会读取常见文本文件，并跳过 .git、node_modules、构建产物和 .polaris 元数据。`
     });
     const files = await collectDesktopWorkspaceTextFiles(root.id);
@@ -607,7 +607,7 @@ function registerDesktopLocalHostIpc() {
       throw new Error('没有可写回本机工作区的文件。');
     }
     await confirmDesktopLocalOperation('write', {
-      title: '允许 Polaris 写回本机工作区？',
+      title: '允许 endless 写回本机工作区？',
       detail: `${root.path}\n\n${files.length} 个文件会被整份写入；不会删除本机多出的文件。`
     });
 
@@ -631,7 +631,7 @@ function registerDesktopLocalHostIpc() {
   ipcMain.handle('polaris-desktop-local:read-file', async (_event, input) => {
     const { root, targetPath } = resolveInsideTrustedRoot(input?.rootId, input?.relativePath);
     await confirmDesktopLocalOperation('read', {
-      title: '允许 Polaris 读取本机文件？',
+      title: '允许 endless 读取本机文件？',
       detail: targetPath
     });
     const content = await fs.promises.readFile(targetPath, 'utf-8');
@@ -647,7 +647,7 @@ function registerDesktopLocalHostIpc() {
     const content = typeof input?.content === 'string' ? input.content : '';
     const { root, targetPath } = resolveWritableInsideTrustedRoot(input?.rootId, input?.relativePath);
     await confirmDesktopLocalOperation('write', {
-      title: '允许 Polaris 写入本机文件？',
+      title: '允许 endless 写入本机文件？',
       detail: `${targetPath}\n${Buffer.byteLength(content, 'utf-8')} bytes`
     });
     await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
@@ -667,7 +667,7 @@ function registerDesktopLocalHostIpc() {
     }
     const { root, targetPath } = resolveWritableInsideTrustedRoot(input?.rootId, relativePath);
     await confirmDesktopLocalOperation('write', {
-      title: '允许 Polaris 创建本机文件夹？',
+      title: '允许 endless 创建本机文件夹？',
       detail: targetPath
     });
     await fs.promises.mkdir(targetPath, { recursive: true });
@@ -687,7 +687,7 @@ function registerDesktopLocalHostIpc() {
     const stat = await fs.promises.lstat(targetPath);
     const kind = desktopDirentKind(stat);
     await confirmDesktopLocalOperation('delete', {
-      title: '允许 Polaris 删除本机路径？',
+      title: '允许 endless 删除本机路径？',
       detail: `${targetPath}\n\n${kind === 'directory' ? '文件夹会递归删除。' : '这个路径会从电脑上删除。'}`
     });
     await fs.promises.rm(targetPath, { recursive: true, force: false });
@@ -716,7 +716,7 @@ function registerDesktopLocalHostIpc() {
     const stat = await fs.promises.lstat(fromPath);
     const kind = desktopDirentKind(stat);
     await confirmDesktopLocalOperation('delete', {
-      title: '允许 Polaris 移动本机路径？',
+      title: '允许 endless 移动本机路径？',
       detail: `${fromPath}\n-> ${toPath}`
     });
     await fs.promises.mkdir(path.dirname(toPath), { recursive: true });
@@ -744,7 +744,7 @@ function registerDesktopLocalHostIpc() {
       throw new Error('命令工作目录必须是文件夹。');
     }
     await confirmDesktopLocalOperation('run', {
-      title: '允许 Polaris 运行本机命令？',
+      title: '允许 endless 运行本机命令？',
       detail: `${command} ${args.join(' ')}\n\ncwd: ${targetPath}`.trim()
     });
     const startedAt = Date.now();
@@ -785,7 +785,7 @@ function registerDesktopLocalHostIpc() {
       });
     }
     await confirmDesktopLocalOperation('run', {
-      title: '允许 Polaris 运行本机命令流程？',
+      title: '允许 endless 运行本机命令流程？',
       detail: plan.map((step) =>
         `${step.index + 1}. ${[step.command, ...step.args].join(' ')}\n   cwd: ${step.cwd}`
       ).join('\n\n')
@@ -837,7 +837,7 @@ function registerDesktopLocalHostIpc() {
       throw new Error('命令工作目录必须是文件夹。');
     }
     await confirmDesktopLocalOperation('run', {
-      title: '允许 Polaris 运行本机命令？',
+      title: '允许 endless 运行本机命令？',
       detail: `${command} ${args.join(' ')}\n\ncwd: ${targetPath}`.trim()
     });
     const session = startDesktopCommandSession({
@@ -1015,7 +1015,7 @@ function createStatusTray() {
   if (TRAY_TITLE) {
     statusTray.setTitle(TRAY_TITLE);
   }
-  statusTray.setToolTip('Polaris 正在后台运行');
+  statusTray.setToolTip('endless 正在后台运行');
   statusTray.on('click', () => {
     showMainWindow();
   });
@@ -1048,16 +1048,16 @@ function updateStatusTrayMenu() {
   }
 
   const isWindowVisible = mainWindow ? mainWindow.isVisible() : false;
-  const statusLabel = isWindowVisible ? 'Polaris 正在运行' : 'Polaris 正在后台运行';
+  const statusLabel = isWindowVisible ? 'endless 正在运行' : 'endless 正在后台运行';
 
   statusTray.setToolTip(statusLabel);
   statusTray.setContextMenu(
     Menu.buildFromTemplate([
       { label: statusLabel, enabled: false },
       { type: 'separator' },
-      { label: '显示 Polaris', click: showMainWindow },
+      { label: '显示 endless', click: showMainWindow },
       {
-        label: '退出 Polaris',
+        label: '退出 endless',
         click: () => {
           isQuitting = true;
           app.quit();

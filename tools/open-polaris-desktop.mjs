@@ -14,12 +14,12 @@ if (process.platform === 'darwin') {
 
 function openMacApp() {
   const sourceApp = path.join(root, 'node_modules', 'electron', 'dist', 'Electron.app');
-  const targetApp = path.join(root, 'tmp', 'Polaris.app');
+  const targetApp = path.join(root, 'tmp', 'endless.app');
   const plistPath = path.join(targetApp, 'Contents', 'Info.plist');
   const resourcesDir = path.join(targetApp, 'Contents', 'Resources');
   const icnsPath = path.join(resourcesDir, 'polaris.icns');
   const electronExecutablePath = path.join(targetApp, 'Contents', 'MacOS', 'Electron');
-  const polarisExecutablePath = path.join(targetApp, 'Contents', 'MacOS', 'Polaris');
+  const polarisExecutablePath = path.join(targetApp, 'Contents', 'MacOS', 'endless');
 
   if (!fs.existsSync(sourceApp)) {
     throw new Error(`Electron app not found at ${sourceApp}`);
@@ -33,9 +33,9 @@ function openMacApp() {
     fs.renameSync(electronExecutablePath, polarisExecutablePath);
   }
 
-  writePlistValue(plistPath, 'CFBundleName', 'Polaris');
-  writePlistValue(plistPath, 'CFBundleDisplayName', 'Polaris');
-  writePlistValue(plistPath, 'CFBundleExecutable', 'Polaris');
+  writePlistValue(plistPath, 'CFBundleName', 'endless');
+  writePlistValue(plistPath, 'CFBundleDisplayName', 'endless');
+  writePlistValue(plistPath, 'CFBundleExecutable', 'endless');
   writePlistValue(plistPath, 'CFBundleIdentifier', 'app.polaris.desktop.dev');
   writePlistValue(plistPath, 'CFBundleIconFile', 'polaris');
 

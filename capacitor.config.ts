@@ -3,7 +3,7 @@ import { KeyboardResize } from '@capacitor/keyboard';
 
 const config: CapacitorConfig = {
   appId: 'com.alyssa.polaris',
-  appName: 'Polaris',
+  appName: 'endless',
   webDir: 'dist',
   server: {
     iosScheme: 'http',

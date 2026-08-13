@@ -4,7 +4,7 @@ import { PNG } from 'pngjs';
 
 const root = process.cwd();
 const outDir = path.join(root, 'public', 'icons');
-const sourcePath = path.join(outDir, 'polaris-icon-source.png');
+const sourcePath = path.join(outDir, 'endless-icon-source.png');
 const macIconPath = path.join(outDir, 'polaris-icon-mac-1024.png');
 const iosAppIconPath = path.join(root, 'ios', 'App', 'App', 'Assets.xcassets', 'AppIcon.appiconset', 'AppIcon-512@2x.png');
 const androidResDir = path.join(root, 'android', 'app', 'src', 'main', 'res');
@@ -30,12 +30,12 @@ const androidSplashTargets = [
   { dir: 'drawable-land-xxxhdpi', width: 1920, height: 1280 }
 ];
 const edgeWhiteThreshold = 242;
-const nativeIconBackground = [3, 18, 50];
+const nativeIconBackground = [196, 207, 171];
 
 fs.mkdirSync(outDir, { recursive: true });
 
 if (!fs.existsSync(sourcePath)) {
-  throw new Error(`Missing Polaris icon source at ${path.relative(root, sourcePath)}`);
+  throw new Error(`Missing endless icon source at ${path.relative(root, sourcePath)}`);
 }
 
 const source = PNG.sync.read(fs.readFileSync(sourcePath));
@@ -58,7 +58,7 @@ if (fs.existsSync(androidResDir)) {
   writeAndroidSplashScreens(canonicalIcon);
 }
 
-console.log(`Generated Polaris icons from ${path.relative(root, sourcePath)}`);
+console.log(`Generated endless icons from ${path.relative(root, sourcePath)}`);
 
 function writeAndroidIcons(image) {
   for (const { density, launcher, foreground } of androidIconDensities) {
@@ -70,7 +70,7 @@ function writeAndroidIcons(image) {
     fs.writeFileSync(path.join(densityDir, 'ic_launcher_round.png'), PNG.sync.write(launcherIcon));
     fs.writeFileSync(
       path.join(densityDir, 'ic_launcher_foreground.png'),
-      PNG.sync.write(centerOnCanvas(resize(image, Math.round(foreground * 0.66)), foreground, foreground, [0, 0, 0, 0]))
+      PNG.sync.write(resize(image, foreground))
     );
   }
 

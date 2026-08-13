@@ -14,6 +14,8 @@ const STAR_SCALE_MIN = 0.82;
 const STAR_SCALE_MAX = 1.18;
 const STAR_WARMTH_MIN = 0;
 const STAR_WARMTH_MAX = 1;
+const COUPLE_IMAGE_SCALE_MIN = 1;
+const COUPLE_IMAGE_SCALE_MAX = 2.4;
 export const DEFAULT_APP_STAR_COLOR = '#8edfff';
 
 export const CUSTOM_FONT_SCOPES = ['global', 'titles', 'chat', 'cards'] as const satisfies readonly CustomFontScope[];
@@ -38,7 +40,12 @@ export const DEFAULT_APP_CUSTOMIZATION: AppCustomization = {
   backgroundOpacity: 0.46,
   backgroundDim: 0.24,
   backgroundBlur: 10,
-  backgroundFit: 'cover'
+  backgroundFit: 'cover',
+  relationshipStartDate: '',
+  coupleImageAssetId: null,
+  coupleImagePositionX: 50,
+  coupleImagePositionY: 50,
+  coupleImageScale: 1
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -62,6 +69,10 @@ function normalizeStarColor(value: unknown): string | null {
 function normalizeAssetIdList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.filter((entry): entry is string => typeof entry === 'string').map((entry) => entry.trim()).filter(Boolean))];
+}
+
+function normalizeRelationshipStartDate(value: unknown) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : '';
 }
 
 function normalizeCustomFontScopeAssignments(
@@ -125,7 +136,24 @@ export function normalizeAppCustomization(
       typeof customization?.backgroundBlur === 'number'
         ? clamp(customization.backgroundBlur, BACKGROUND_BLUR_MIN, BACKGROUND_BLUR_MAX)
         : DEFAULT_APP_CUSTOMIZATION.backgroundBlur,
-    backgroundFit: normalizeBackgroundFit(customization?.backgroundFit)
+    backgroundFit: normalizeBackgroundFit(customization?.backgroundFit),
+    relationshipStartDate: normalizeRelationshipStartDate(customization?.relationshipStartDate),
+    coupleImageAssetId:
+      typeof customization?.coupleImageAssetId === 'string' && customization.coupleImageAssetId.trim()
+        ? customization.coupleImageAssetId.trim()
+        : null,
+    coupleImagePositionX:
+      typeof customization?.coupleImagePositionX === 'number'
+        ? clamp(customization.coupleImagePositionX, 0, 100)
+        : DEFAULT_APP_CUSTOMIZATION.coupleImagePositionX,
+    coupleImagePositionY:
+      typeof customization?.coupleImagePositionY === 'number'
+        ? clamp(customization.coupleImagePositionY, 0, 100)
+        : DEFAULT_APP_CUSTOMIZATION.coupleImagePositionY,
+    coupleImageScale:
+      typeof customization?.coupleImageScale === 'number'
+        ? clamp(customization.coupleImageScale, COUPLE_IMAGE_SCALE_MIN, COUPLE_IMAGE_SCALE_MAX)
+        : DEFAULT_APP_CUSTOMIZATION.coupleImageScale
   };
 }
 

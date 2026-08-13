@@ -12,13 +12,15 @@ import { MenuDocsPage } from './menu/MenuDocsPage';
 import { MenuDesktopLocalPage } from './menu/MenuDesktopLocalPage';
 import { MenuDisplayPage } from './menu/MenuDisplayPage';
 import { MenuFontsPage } from './menu/MenuFontsPage';
+import { MenuLanguagePage } from './menu/MenuLanguagePage';
 import { MenuRootPage } from './menu/MenuRootPage';
 import { MenuStoragePage } from './menu/MenuStoragePage';
+import { MenuSystemPage } from './menu/MenuSystemPage';
 import { MenuToolboxPage } from './menu/MenuToolboxPage';
 import { MenuUsagePage } from './menu/MenuUsagePage';
 import { MenuVoicePage } from './menu/MenuVoicePage';
 import { RuntimePerformanceSurfaceMounted } from '../runtime-performance/RuntimePerformanceSurfaceSignals';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 type MenuPage = MenuOverlayPage;
 
@@ -28,6 +30,7 @@ type MenuSheetProps = {
   theme: ThemeState;
   onClose: () => void;
   onOpenApi: (returnPage: MenuPage) => void;
+  closeOnBack?: boolean;
 };
 
 export function MenuSheet({
@@ -35,7 +38,8 @@ export function MenuSheet({
   initialPage = 'root',
   theme,
   onClose,
-  onOpenApi
+  onOpenApi,
+  closeOnBack = false
 }: MenuSheetProps) {
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const fontInputRef = useRef<HTMLInputElement | null>(null);
@@ -62,13 +66,17 @@ export function MenuSheet({
       }
     }
   });
-
-  if (!open) return null;
   const visiblePage = controller.page === 'desktopLocal' && !controller.desktopLocalAvailable
     ? 'root'
     : controller.page === 'memory' && !MEMORY_RELEASE_GATES.showGlobalConversationSummarySettings
       ? 'root'
       : controller.page;
+
+  useEffect(() => {
+    if (open && closeOnBack && visiblePage === 'root') onClose();
+  }, [closeOnBack, onClose, open, visiblePage]);
+
+  if (!open || (closeOnBack && visiblePage === 'root')) return null;
 
   return (
     <div
@@ -275,6 +283,9 @@ export function MenuSheet({
             onDeleteCustomFont={controller.onDeleteCustomFont}
           />
         ) : null}
+        {visiblePage === 'language' ? (
+          <MenuLanguagePage onBack={() => controller.onSetPage('root')} />
+        ) : null}
         {visiblePage === 'storage' ? (
           <MenuStoragePage
             snapshot={controller.storageHealthSnapshot}
@@ -313,6 +324,12 @@ export function MenuSheet({
           <MenuDocsPage
             initialDocId="privacy"
             onBack={() => controller.onSetPage('root')}
+          />
+        ) : null}
+        {visiblePage === 'system' ? (
+          <MenuSystemPage
+            onBack={() => controller.onSetPage('root')}
+            onCheckUpdate={() => { void controller.onCheckAndroidApkUpdate(); }}
           />
         ) : null}
       </div>

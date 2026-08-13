@@ -18,7 +18,7 @@ import { useMenuGenerationSettingsController } from './useMenuGenerationSettings
 import { useMenuToolboxController } from './useMenuToolboxController';
 import { createMenuStorageMaintenanceActions } from './menuStorageMaintenanceActions';
 
-export type MenuPage = 'root' | 'backup' | 'gateway' | 'memory' | 'generation' | 'voice' | 'toolbox' | 'mcp' | 'desktopLocal' | 'automation' | 'usage' | 'display' | 'fonts' | 'storage' | 'docs' | 'privacy';
+export type MenuPage = 'root' | 'backup' | 'gateway' | 'memory' | 'generation' | 'voice' | 'toolbox' | 'mcp' | 'desktopLocal' | 'automation' | 'usage' | 'display' | 'fonts' | 'language' | 'storage' | 'docs' | 'privacy' | 'system';
 const REQUEST_DEBUG_EVENT = 'polaris:request-debug-updated';
 
 export function shouldSyncMenuRequestEntries(open: boolean, page: MenuPage) {

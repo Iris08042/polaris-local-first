@@ -92,6 +92,10 @@ export function useAppShellController() {
   const activeConversationCollaboratorName = collaborators.find((persona) => persona.id === activeConversationCollaboratorId)?.name ?? null;
   const frontstageCollaborator = collaborators.find((persona) => persona.id === frontstageCollaboratorId) ?? null;
   const frontstageCollaboratorName = frontstageCollaborator?.name ?? null;
+  const endlessSummerCollaborator = collaborators.find((persona) => persona.id === activeConversationCollaboratorId)
+    ?? frontstageCollaborator
+    ?? collaborators.find((persona) => persona.id === activeCollaboratorId)
+    ?? null;
   const collaboratorIds = useMemo(() => collaborators.map((collaborator) => collaborator.id), [collaborators]);
   const desktopSidebarConversations = useMemo(
     () => {
@@ -328,6 +332,23 @@ export function useAppShellController() {
     collectionOpenSettings: overlays.collectionOpenSettings,
     openBackupSettings: () => overlays.openMenuAt('backup'),
     collectionOpenDesktopLocalSettings: overlays.collectionOpenDesktopLocalSettings,
+    endlessSummer: {
+      collaboratorName: endlessSummerCollaborator?.name.trim() || '当前协作者',
+      userName: endlessSummerCollaborator?.userName.trim() || '你',
+      collectionShelf,
+      setCustomization: stores.space.setCustomization,
+      onOpenChat: () => {
+        navigationActions.prepareChatForWorldReturn();
+        setWorld('chat');
+      },
+      onOpenCollectionShelf: (shelf: typeof collectionShelf) => {
+        setCollectionShelf(shelf);
+        setWorld('collection');
+      },
+      onOpenGroup: () => setWorld('group'),
+      onOpenSettingsPage: overlays.openMenuAt,
+      onOpenProviderSettings: overlays.collectionOpenProviderSettings
+    },
     collectionDeleteCollaborator: overlays.collaboratorActions.deleteCollaboratorFromPanel,
     canReviveTheme: overlays.canReviveTheme,
     restoreLastThemeSkin: overlays.restoreLastThemeSkin,

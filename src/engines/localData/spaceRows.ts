@@ -129,6 +129,7 @@ function collectSkinAssetRefs(skin: SavedSkin) {
 function collectCustomizationAssetRefs(customization: AppCustomization) {
   return uniqueSortedIds([
     customization.backgroundAssetId,
+    customization.coupleImageAssetId,
     ...customization.customFontAssetIds
   ]);
 }

@@ -168,6 +168,9 @@ function collectCustomizationAssetIds(customization: AppCustomization | null | u
   if (typeof customization?.backgroundAssetId === 'string' && customization.backgroundAssetId.trim()) {
     assetIds.add(customization.backgroundAssetId);
   }
+  if (typeof customization?.coupleImageAssetId === 'string' && customization.coupleImageAssetId.trim()) {
+    assetIds.add(customization.coupleImageAssetId);
+  }
   customization?.customFontAssetIds?.forEach((assetId) => {
     if (assetId.trim()) assetIds.add(assetId);
   });

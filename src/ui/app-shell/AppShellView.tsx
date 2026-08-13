@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { AppShellOverlays } from '../AppShellOverlays';
 import { AppReplyNotificationStack } from './AppReplyNotificationStack';
 import { DesktopAppShellFrame } from './DesktopAppShellFrame';
-import { MobileAppShellFrame } from './MobileAppShellFrame';
+import { EndlessSummerShell } from '../endless-summer/EndlessSummerShell';
 import { PersistenceReadFailureNotice } from './PersistenceReadFailureNotice';
 import { WorldFrameBoundary, WorldFrameFallback } from './WorldFrameBoundary';
 import type { useAppShellViewController } from './useAppShellViewController';
@@ -29,6 +29,7 @@ export function AppShellView({
   collectionOpenProviderSettings,
   collectionOpenSettings,
   collectionOpenDesktopLocalSettings,
+  endlessSummer,
   collectionDeleteCollaborator,
   collaboratorTransitionKey,
   topbarProps,
@@ -112,7 +113,13 @@ export function AppShellView({
             onRetry={() => retryWorldFrame('group')}
           >
             <Suspense fallback={<WorldFrameFallback world="group" />}>
-              <GroupWorld {...groupWorldProps} />
+              <GroupWorld
+                {...groupWorldProps}
+                shell={{
+                  ...groupWorldProps.shell,
+                  onExitToRoomSwitch: showDesktopSidebar ? groupWorldProps.shell.onExitToRoomSwitch : undefined
+                }}
+              />
             </Suspense>
           </WorldFrameBoundary>
         </div>
@@ -122,7 +129,7 @@ export function AppShellView({
 
   return (
     <main
-      className={`app-shell app-layout-${appLayoutSurface} ${hasWideLayout ? 'app-layout-wide' : 'app-layout-compact'} ${showDesktopSidebar ? 'has-desktop-sidebar' : ''} ${showDesktopSidebar && effectiveDesktopSidebarCollapsed ? 'desktop-sidebar-collapsed' : ''} ${activeWorld} world-chroma-${shellWorld} chat-render-${activeChatDensity} ${isWorldSwitching ? 'world-switching' : ''} ${isCollaboratorTransitionActive ? 'collaborator-transition-active' : ''} ${collectionScopeDrawerOpen ? 'collaborator-scope-drawer-active' : ''} ${themeTransitionPhase ? `theme-transition-${themeTransitionPhase}` : ''}`}
+      className={`app-shell app-layout-${appLayoutSurface} ${hasWideLayout ? 'app-layout-wide' : 'app-layout-compact'} ${showDesktopSidebar ? 'has-desktop-sidebar' : 'endless-summer'} ${showDesktopSidebar && effectiveDesktopSidebarCollapsed ? 'desktop-sidebar-collapsed' : ''} ${activeWorld} world-chroma-${shellWorld} chat-render-${activeChatDensity} ${isWorldSwitching ? 'world-switching' : ''} ${isCollaboratorTransitionActive ? 'collaborator-transition-active' : ''} ${collectionScopeDrawerOpen ? 'collaborator-scope-drawer-active' : ''} ${themeTransitionPhase ? `theme-transition-${themeTransitionPhase}` : ''}`}
       style={starStyle}
     >
       {backgroundUrl ? (
@@ -160,9 +167,23 @@ export function AppShellView({
           {worldStack}
         </DesktopAppShellFrame>
       ) : (
-        <MobileAppShellFrame topbarProps={topbarProps}>
-          {worldStack}
-        </MobileAppShellFrame>
+        <EndlessSummerShell
+          activeWorld={activeWorld}
+          worldStack={worldStack}
+          topbarProps={topbarProps}
+          conversations={desktopSidebarProps}
+          collaboratorName={endlessSummer.collaboratorName}
+          userName={endlessSummer.userName}
+          collectionShelf={endlessSummer.collectionShelf}
+          customization={customization}
+          setCustomization={endlessSummer.setCustomization}
+          onOpenChat={endlessSummer.onOpenChat}
+          onOpenCollectionShelf={endlessSummer.onOpenCollectionShelf}
+          onOpenGroup={endlessSummer.onOpenGroup}
+          onCloseCollectionScope={() => setCollectionCollaboratorSwitchOpen(false)}
+          onOpenSettingsPage={endlessSummer.onOpenSettingsPage}
+          onOpenProviderSettings={endlessSummer.onOpenProviderSettings}
+        />
       )}
 
       <AppReplyNotificationStack {...replyNotificationProps} />
@@ -171,7 +192,7 @@ export function AppShellView({
         onRetry={onRetryPersistenceReadFailure}
         onOpenBackup={onOpenBackupFromReadFailure}
       />
-      <AppShellOverlays {...overlaysProps} />
+      <AppShellOverlays {...overlaysProps} endlessSummer={!showDesktopSidebar} />
     </main>
   );
 }

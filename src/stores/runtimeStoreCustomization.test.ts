@@ -27,6 +27,11 @@ describe('normalizeAppCustomization', () => {
         chat: 'missing-font',
         cards: ' asset-serif '
       },
+      relationshipStartDate: 'not-a-date',
+      coupleImageAssetId: ' couple-photo ',
+      coupleImagePositionX: -8,
+      coupleImagePositionY: 140,
+      coupleImageScale: 9,
       backgroundFit: 'weird' as 'cover'
     })).toEqual({
       ...DEFAULT_APP_CUSTOMIZATION,
@@ -45,6 +50,11 @@ describe('normalizeAppCustomization', () => {
         chat: null,
         cards: 'asset-serif'
       },
+      relationshipStartDate: '',
+      coupleImageAssetId: 'couple-photo',
+      coupleImagePositionX: 0,
+      coupleImagePositionY: 100,
+      coupleImageScale: 2.4,
       backgroundFit: 'cover'
     });
   });
@@ -78,6 +88,23 @@ describe('mergeAppCustomizationPatch', () => {
         cards: null
       },
       backgroundFit: 'contain'
+    });
+  });
+
+  it('stores the small-home date and replaceable photo presentation', () => {
+    expect(mergeAppCustomizationPatch(DEFAULT_APP_CUSTOMIZATION, {
+      relationshipStartDate: '2026-08-12',
+      coupleImageAssetId: 'asset-couple',
+      coupleImagePositionX: 42,
+      coupleImagePositionY: 64,
+      coupleImageScale: 1.35
+    })).toEqual({
+      ...DEFAULT_APP_CUSTOMIZATION,
+      relationshipStartDate: '2026-08-12',
+      coupleImageAssetId: 'asset-couple',
+      coupleImagePositionX: 42,
+      coupleImagePositionY: 64,
+      coupleImageScale: 1.35
     });
   });
 });

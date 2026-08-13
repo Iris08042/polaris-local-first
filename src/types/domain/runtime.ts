@@ -42,6 +42,11 @@ export interface AppCustomization {
   backgroundDim: number;
   backgroundBlur: number;
   backgroundFit: AppBackgroundFit;
+  relationshipStartDate?: string;
+  coupleImageAssetId?: string | null;
+  coupleImagePositionX?: number;
+  coupleImagePositionY?: number;
+  coupleImageScale?: number;
 }
 
 export interface ProviderCapabilities {

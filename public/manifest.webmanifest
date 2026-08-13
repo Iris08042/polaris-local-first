@@ -1,6 +1,6 @@
 {
-  "name": "Polaris 北极星",
-  "short_name": "Polaris",
+  "name": "endless",
+  "short_name": "endless",
   "description": "一个能与你对话，也会把云端心跳消息带回同一段生活的房间。",
   "start_url": "/",
   "scope": "/",

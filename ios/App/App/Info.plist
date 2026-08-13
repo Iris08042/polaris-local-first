@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Polaris</string>
+	<string>endless</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -45,15 +45,15 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Polaris 需要使用相机来临时拍照并把图片发进对话。</string>
+	<string>endless 需要使用相机来临时拍照并把图片发进对话。</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Polaris 需要访问你的日历事件，才能在你主动开启系统资料工具后，让协作者按你的要求读取、创建、修改或删除日程。</string>
+	<string>endless 需要访问你的日历事件，才能在你主动开启系统资料工具后，让协作者按你的要求读取、创建、修改或删除日程。</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Polaris 需要访问你的日历事件，才能在你主动开启系统资料工具后，让协作者按你的要求读取、创建、修改或删除日程。</string>
+	<string>endless 需要访问你的日历事件，才能在你主动开启系统资料工具后，让协作者按你的要求读取、创建、修改或删除日程。</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Polaris 需要照片权限把生成的图片保存到你的图库。</string>
+	<string>endless 需要照片权限把生成的图片保存到你的图库。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Polaris 需要访问你的照片图库，这样你才能把图片直接带进对话。</string>
+	<string>endless 需要访问你的照片图库，这样你才能把图片直接带进对话。</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

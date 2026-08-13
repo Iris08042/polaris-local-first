@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 
 const root = process.cwd();
-const appName = 'Polaris';
+const appName = 'endless';
 const bundleId = 'app.polaris.mac';
 const desktopDistDir = path.join(root, 'desktop-dist');
 const targetApp = path.join(desktopDistDir, `${appName}.app`);
@@ -65,7 +65,7 @@ createIcns(path.join(resourcesDir, 'polaris.icns'));
 assertCleanPackagedApp(appResourcesDir);
 writeManifest();
 
-console.log(`Polaris Mac app bundle created at ${targetApp}`);
+console.log(`endless Mac app bundle created at ${targetApp}`);
 console.log(`Release manifest written to ${path.join(desktopDistDir, 'manifest.json')}`);
 console.log('This bundle is unsigned and not notarized. Keep it as pre-release proof until signing passes.');
 

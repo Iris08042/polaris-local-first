@@ -43,8 +43,9 @@ export function AppShellOverlays({
   menu,
   api,
   collaboratorBuilder,
-  companionSetup
-}: AppShellOverlaysProps) {
+  companionSetup,
+  endlessSummer = false
+}: AppShellOverlaysProps & { endlessSummer?: boolean }) {
   const { t } = useI18n();
 
   useEffect(() => {
@@ -76,6 +77,7 @@ export function AppShellOverlays({
             theme={menu.theme}
             onClose={menu.onClose}
             onOpenApi={menu.onOpenApi}
+            closeOnBack={endlessSummer}
           />
         </Suspense>
       )}
@@ -89,7 +91,7 @@ export function AppShellOverlays({
             apiTesting={api.apiTesting}
             apiTestResult={api.apiTestResult}
             apiBatchTestState={api.apiBatchTestState}
-            onBackToMenu={api.onBackToMenu}
+            onBackToMenu={endlessSummer ? api.onClose : api.onBackToMenu}
             onClose={api.onClose}
             onSetActiveProvider={api.onSetActiveProvider}
             onCreateProvider={api.onCreateProvider}
@@ -139,7 +141,7 @@ export function AppShellOverlays({
 
   if (typeof document === 'undefined') return overlayContent;
   return createPortal(
-    <div className="app-global-overlays">
+    <div className={`app-global-overlays${endlessSummer ? ' endless-summer-overlays' : ''}`}>
       {overlayContent}
     </div>,
     document.body

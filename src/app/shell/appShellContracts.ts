@@ -2,7 +2,7 @@ import type { CodeCard, Persona, ProviderProfile, ThemeState } from '../../types
 import type { PersonaUpdatePatch } from '../persona/personaUpdatePatch';
 import type { ProviderBatchConnectionTestState } from './providerBatchConnectionTest';
 
-export type MenuOverlayPage = 'root' | 'backup' | 'gateway' | 'memory' | 'generation' | 'voice' | 'toolbox' | 'mcp' | 'desktopLocal' | 'automation' | 'usage' | 'display' | 'fonts' | 'storage' | 'docs' | 'privacy';
+export type MenuOverlayPage = 'root' | 'backup' | 'gateway' | 'memory' | 'generation' | 'voice' | 'toolbox' | 'mcp' | 'desktopLocal' | 'automation' | 'usage' | 'display' | 'fonts' | 'language' | 'storage' | 'docs' | 'privacy' | 'system';
 
 export type CollaboratorIntroCardSeed = Pick<
   CodeCard,
