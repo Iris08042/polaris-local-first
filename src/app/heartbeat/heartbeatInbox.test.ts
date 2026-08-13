@@ -3,6 +3,11 @@ import { acknowledgeHeartbeatInbox, fetchHeartbeatInbox } from './heartbeatInbox
 import { createHeartbeatInboxMessage, heartbeatInboxMessageId } from './heartbeatInboxMessage';
 import { normalizeHeartbeatInboxConfig } from './heartbeatInboxSettings';
 import {
+  buildHeartbeatContextPayload,
+  heartbeatContextRevision,
+  syncHeartbeatContext
+} from './heartbeatContextClient';
+import {
   createHeartbeatInboxSyncRunner,
   persistThenAcknowledgeHeartbeatInbox
 } from './useHeartbeatInboxRuntime';
@@ -128,5 +133,60 @@ describe('heartbeat inbox', () => {
     complete.shift()?.();
     await vi.waitFor(() => expect(signals).toHaveLength(2));
     runner.stop();
+  });
+
+  it('builds context only from ordinary messages in the selected conversation', () => {
+    const payload = buildHeartbeatContextPayload({
+      id: 'bound-conversation',
+      title: '绑定对话',
+      collaboratorId: 'yemingzhou',
+      messages: [
+        { id: 'user-1', role: 'user', content: '普通用户消息', timestamp: 100, origin: 'user-input' },
+        { id: 'heartbeat-inbox:event-1', role: 'assistant', content: '已收取主动消息', timestamp: 200, origin: 'assistant-reply' },
+        { id: 'tool-1', role: 'assistant', content: '工具记录', timestamp: 300, origin: 'tool-runtime' },
+        { id: 'assistant-1', role: 'assistant', content: '普通回复', timestamp: 400, origin: 'assistant-reply' }
+      ],
+      pinnedAt: null,
+      updatedAt: 400
+    }, 'yemingzhou', '角色设定');
+
+    expect(payload).toEqual({
+      collaboratorId: 'yemingzhou',
+      conversationId: 'bound-conversation',
+      systemPrompt: '角色设定',
+      messages: [
+        { id: 'user-1', role: 'user', content: '普通用户消息', timestamp: 100 },
+        { id: 'assistant-1', role: 'assistant', content: '普通回复', timestamp: 400 }
+      ]
+    });
+  });
+
+  it('does not build an empty context without a user message', () => {
+    expect(buildHeartbeatContextPayload({
+      id: 'empty',
+      title: '空对话',
+      collaboratorId: 'yemingzhou',
+      messages: [{ id: 'assistant-1', role: 'assistant', content: '只有助手', timestamp: 100 }],
+      pinnedAt: null,
+      updatedAt: 100
+    }, 'yemingzhou', '角色设定')).toBeNull();
+  });
+
+  it('syncs the selected context through the heartbeat endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: true }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const payload = {
+      collaboratorId: 'yemingzhou',
+      conversationId: 'bound-conversation',
+      systemPrompt: '角色设定',
+      messages: [{ id: 'user-1', role: 'user' as const, content: '你好', timestamp: 100 }]
+    };
+
+    await syncHeartbeatContext(config, payload);
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${config.endpoint}/context`,
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify(payload) })
+    );
+    expect(heartbeatContextRevision(payload)).toBe(heartbeatContextRevision({ ...payload }));
   });
 });
