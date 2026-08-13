@@ -29,8 +29,10 @@ export function HeartbeatRuntimeSettingsPanel() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [savingPrompt, setSavingPrompt] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [feedbackTarget, setFeedbackTarget] = useState<'model' | 'prompt'>('model');
 
   const editProfile = useCallback((config: HeartbeatModelConfig, id: string) => {
     const profile = config.profiles.find(item => item.id === id);
@@ -89,6 +91,7 @@ export function HeartbeatRuntimeSettingsPanel() {
       return;
     }
     setBusy(true);
+    setFeedbackTarget('model');
     setError('');
     setNotice('');
     try {
@@ -103,6 +106,7 @@ export function HeartbeatRuntimeSettingsPanel() {
   }
 
   async function saveProfile() {
+    setFeedbackTarget('model');
     if (!profileName.trim() || !baseUrl.trim() || !model.trim()) {
       setError('方案名称、API 基础地址和模型名称都必须填写。');
       return;
@@ -129,6 +133,7 @@ export function HeartbeatRuntimeSettingsPanel() {
   }
 
   async function loadModels() {
+    setFeedbackTarget('model');
     if (!baseUrl.trim()) {
       setError('请先填写 API 基础地址。');
       return;
@@ -153,6 +158,7 @@ export function HeartbeatRuntimeSettingsPanel() {
   }
 
   async function testConnection() {
+    setFeedbackTarget('model');
     if (!baseUrl.trim() || !model.trim()) {
       setError('请先填写 API 基础地址并选择模型。');
       return;
@@ -162,6 +168,7 @@ export function HeartbeatRuntimeSettingsPanel() {
       return;
     }
     setBusy(true);
+    setTestingConnection(true);
     setError('');
     setNotice('');
     try {
@@ -171,6 +178,7 @@ export function HeartbeatRuntimeSettingsPanel() {
       setError(reason instanceof Error ? reason.message : '连接测试失败。');
     } finally {
       setBusy(false);
+      setTestingConnection(false);
     }
   }
 
@@ -178,6 +186,7 @@ export function HeartbeatRuntimeSettingsPanel() {
     if (!profileId || !modelConfig || modelConfig.profiles.length < 2) return;
     if (!window.confirm(`删除线路方案「${profileName}」吗？`)) return;
     setBusy(true);
+    setFeedbackTarget('model');
     setError('');
     setNotice('');
     try {
@@ -192,6 +201,7 @@ export function HeartbeatRuntimeSettingsPanel() {
   }
 
   async function savePrompt() {
+    setFeedbackTarget('prompt');
     if (!prompt.trim()) {
       setError('心跳提示词不能为空。');
       return;
@@ -275,10 +285,11 @@ export function HeartbeatRuntimeSettingsPanel() {
         <p className="heartbeat-policy__note">{selectedProfile?.apiKeyConfigured ? '密钥已保存；黑色圆点不会泄露真实密钥。' : '新方案需要填写密钥。'}</p>
 
         <div className="heartbeat-policy__actions heartbeat-runtime-settings__actions">
-          <button className="mcp-btn" type="button" onClick={() => void testConnection()} disabled={busy}>测试连接</button>
+          <button className="mcp-btn" type="button" onClick={() => void testConnection()} disabled={busy}>{testingConnection ? '正在测试…' : '测试连接'}</button>
           {profileId && (modelConfig?.profiles.length || 0) > 1 ? <button className="heartbeat-policy__delete" type="button" onClick={() => void removeProfile()} disabled={busy}>删除方案</button> : null}
         </div>
         <button className="heartbeat-policy__save" type="button" onClick={() => void saveProfile()} disabled={busy}>{busy ? '正在处理…' : '保存并启用此方案'}</button>
+        {feedbackTarget === 'model' && (error || notice) && <p aria-live="polite" className={`heartbeat-policy-state${error ? ' heartbeat-policy-state--error' : ''}`}>{error || notice}</p>}
       </div>
 
       <div className="heartbeat-policy__section">
@@ -288,9 +299,8 @@ export function HeartbeatRuntimeSettingsPanel() {
         <textarea className="ps-input heartbeat-runtime-settings__prompt" rows={13} value={prompt} onChange={(event) => setPrompt(event.target.value)} />
         <p className="heartbeat-policy__note">可以使用 {'${currentTime}'}、{'${diffMinutes}'} 和 {'${weatherContext}'}；投递格式、连续心理活动和防重复规则由系统自动附加。</p>
         <button className="heartbeat-policy__save" type="button" onClick={() => void savePrompt()} disabled={savingPrompt}>{savingPrompt ? '正在保存…' : '保存提示词'}</button>
+        {feedbackTarget === 'prompt' && (error || notice) && <p aria-live="polite" className={`heartbeat-policy-state${error ? ' heartbeat-policy-state--error' : ''}`}>{error || notice}</p>}
       </div>
-
-      {(error || notice) && <p className={`heartbeat-policy-state${error ? ' heartbeat-policy-state--error' : ''}`}>{error || notice}</p>}
     </section>
   );
 }
