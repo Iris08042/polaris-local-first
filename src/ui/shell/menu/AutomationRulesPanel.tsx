@@ -1,6 +1,7 @@
 import type { Conversation, Persona, PolarisTriggerRule, PolarisTriggerSchedule } from '../../../types/domain';
 import { HeartbeatInboxSettingsCard } from './HeartbeatInboxSettingsCard';
 import { HeartbeatPolicyPanel } from './HeartbeatPolicyPanel';
+import { HeartbeatRuntimeSettingsPanel } from './HeartbeatRuntimeSettingsPanel';
 
 type ConversationSelectMode = PolarisTriggerRule['target']['conversationMode'];
 
@@ -41,6 +42,7 @@ export function AutomationRulesPanel({
         conversations={conversations}
         lockedCollaboratorId={lockedCollaboratorId}
       />
+      <HeartbeatRuntimeSettingsPanel />
       <HeartbeatPolicyPanel />
     </div>
   );
