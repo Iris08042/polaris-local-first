@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   fetchHeartbeatPolicy,
+  notifyHeartbeatPolicyChanged,
   saveHeartbeatPolicy,
   type HeartbeatPolicy,
   type HeartbeatPolicySnapshot,
@@ -91,6 +92,7 @@ export function HeartbeatPolicyPanel() {
       const next = await saveHeartbeatPolicy(policy);
       setSnapshot(next);
       setPolicy(next.policy);
+      notifyHeartbeatPolicyChanged();
       setNotice('已保存，云端心跳会立即按新策略运行。');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '保存失败。');
@@ -119,8 +121,18 @@ export function HeartbeatPolicyPanel() {
 
       <div className="heartbeat-policy__active">
         <span>当前生效</span>
-        <strong>{activeProfile?.name || snapshot?.active.profileName || '未知'}</strong>
-        <small>{snapshot ? SOURCE_LABELS[snapshot.active.source] : '尚未读取'}</small>
+        <strong>{policy.enabled ? activeProfile?.name || snapshot?.active.profileName || '未知' : '主动消息已暂停'}</strong>
+        <small>{policy.enabled ? snapshot ? SOURCE_LABELS[snapshot.active.source] : '尚未读取' : '仍会收取已有未读消息'}</small>
+      </div>
+
+      <div className="heartbeat-policy__section">
+        <div className="heartbeat-policy__section-head">
+          <div><h4>主动消息总开关</h4><p>关闭后不再生成新消息；云端已有的未读消息仍会正常收取。</p></div>
+          <label className="heartbeat-policy__switch"><input type="checkbox" checked={policy.enabled} onChange={(event) => setPolicy({
+            ...policy,
+            enabled: event.target.checked
+          })} /><span /></label>
+        </div>
       </div>
 
       <div className="heartbeat-policy__section">

@@ -1,5 +1,7 @@
 import { readHeartbeatInboxConfig } from './heartbeatInboxSettings';
 
+export const HEARTBEAT_POLICY_CHANGED_EVENT = 'polaris:heartbeat-policy-changed';
+
 export type HeartbeatProfile = {
   id: string;
   name: string;
@@ -35,6 +37,7 @@ export type HeartbeatSchedule = HeartbeatRecurringSchedule | HeartbeatOneTimeSch
 
 export type HeartbeatPolicy = {
   version: 1;
+  enabled: boolean;
   defaultProfileId: string;
   profiles: HeartbeatProfile[];
   schedules: HeartbeatSchedule[];
@@ -91,4 +94,8 @@ export function fetchHeartbeatPolicy() {
 
 export function saveHeartbeatPolicy(policy: HeartbeatPolicy) {
   return requestPolicy('PUT', policy);
+}
+
+export function notifyHeartbeatPolicyChanged() {
+  window.dispatchEvent(new Event(HEARTBEAT_POLICY_CHANGED_EVENT));
 }

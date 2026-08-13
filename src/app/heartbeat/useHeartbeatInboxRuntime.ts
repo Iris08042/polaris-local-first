@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { ChatStoreBindings } from '../chat/useChatStoreBindings';
 import { selectChatConversations } from '../chat/liveConversationCatalog';
 import { resolveTriggerConversationForTarget } from '../chat/triggerConversationResolution';
@@ -15,6 +15,53 @@ type UseHeartbeatInboxRuntimeArgs = {
   store: ChatStoreBindings;
   setCommandStatus: (text: string, isError?: boolean) => void;
 };
+
+export async function persistThenAcknowledgeHeartbeatInbox(
+  persistToDb: () => Promise<void>,
+  acknowledge: () => Promise<void>
+) {
+  await persistToDb();
+  await acknowledge();
+}
+
+export function createHeartbeatInboxSyncRunner(
+  run: (signal: AbortSignal) => Promise<void>
+) {
+  let running = false;
+  let pending = false;
+  let stopped = false;
+  let controller: AbortController | null = null;
+
+  const start = () => {
+    if (stopped || running) return;
+    running = true;
+    pending = false;
+    controller = new AbortController();
+
+    void run(controller.signal).finally(() => {
+      running = false;
+      controller = null;
+      if (pending && !stopped) start();
+    });
+  };
+
+  return {
+    request(replaceCurrent = false) {
+      if (stopped) return;
+      if (running) {
+        pending = true;
+        if (replaceCurrent) controller?.abort();
+        return;
+      }
+      start();
+    },
+    stop() {
+      stopped = true;
+      pending = false;
+      controller?.abort();
+    }
+  };
+}
 
 function resolveInboxConversation(store: ChatStoreBindings, collaboratorId: string, conversationId: string | null) {
   const chatState = store.chat.readLatestState();
@@ -36,56 +83,30 @@ export function useHeartbeatInboxRuntime({
   store,
   setCommandStatus
 }: UseHeartbeatInboxRuntimeArgs) {
-  const runningRef = useRef(false);
   const storeRef = useRef(store);
-  const [wakeTick, setWakeTick] = useState(0);
+  const setCommandStatusRef = useRef(setCommandStatus);
   storeRef.current = store;
+  setCommandStatusRef.current = setCommandStatus;
 
   useEffect(() => {
     if (!startupReady || typeof window === 'undefined') return;
 
-    const wake = () => setWakeTick((current) => current + 1);
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== 'hidden') wake();
-    };
+    const runner = createHeartbeatInboxSyncRunner(async (signal) => {
+      const config = readHeartbeatInboxConfig();
+      if (!config.enabled || !config.endpoint || !config.token || !config.collaboratorId) return;
 
-    window.addEventListener('focus', wake);
-    window.addEventListener('pageshow', wake);
-    window.addEventListener(HEARTBEAT_INBOX_CONFIG_CHANGED_EVENT, wake);
-    window.addEventListener(HEARTBEAT_INBOX_SYNC_REQUESTED_EVENT, wake);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+      const runtimeStore = storeRef.current;
+      const persona = runtimeStore.persona.readLatestState().personas.find(
+        (entry) => entry.id === config.collaboratorId
+      ) ?? null;
+      if (!persona) {
+        setCommandStatusRef.current('心跳收件箱绑定的协作者不存在。', true);
+        return;
+      }
 
-    return () => {
-      window.removeEventListener('focus', wake);
-      window.removeEventListener('pageshow', wake);
-      window.removeEventListener(HEARTBEAT_INBOX_CONFIG_CHANGED_EVENT, wake);
-      window.removeEventListener(HEARTBEAT_INBOX_SYNC_REQUESTED_EVENT, wake);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [startupReady]);
-
-  useEffect(() => {
-    if (!startupReady || runningRef.current) return;
-
-    const config = readHeartbeatInboxConfig();
-    if (!config.enabled || !config.endpoint || !config.token || !config.collaboratorId) return;
-
-    const runtimeStore = storeRef.current;
-    const persona = runtimeStore.persona.readLatestState().personas.find(
-      (entry) => entry.id === config.collaboratorId
-    ) ?? null;
-    if (!persona) {
-      setCommandStatus('心跳收件箱绑定的协作者不存在。', true);
-      return;
-    }
-
-    const controller = new AbortController();
-    runningRef.current = true;
-
-    void (async () => {
       try {
-        const events = await fetchHeartbeatInbox(config, controller.signal);
-        if (events.length === 0) return;
+        const events = await fetchHeartbeatInbox(config, signal);
+        if (signal.aborted || events.length === 0) return;
 
         const conversation = resolveInboxConversation(
           runtimeStore,
@@ -95,6 +116,7 @@ export function useHeartbeatInboxRuntime({
         if (!conversation) throw new Error('找不到心跳消息要写入的对话。');
 
         const writableConversation = await runtimeStore.chat.ensureConversationWritable(conversation.id);
+        if (signal.aborted) return;
         if (!writableConversation) throw new Error('目标对话还没有准备好。');
 
         const existingIds = new Set(writableConversation.messages.map((message) => message.id));
@@ -111,24 +133,43 @@ export function useHeartbeatInboxRuntime({
           importedCount += 1;
         }
 
-        if (importedCount > 0) await runtimeStore.chat.persistToDb();
-
-        await acknowledgeHeartbeatInbox(
-          config,
-          events.map((event) => event.id),
-          controller.signal
+        await persistThenAcknowledgeHeartbeatInbox(
+          () => runtimeStore.chat.persistToDb(),
+          () => acknowledgeHeartbeatInbox(
+            config,
+            events.map((event) => event.id),
+            signal
+          )
         );
 
-        if (importedCount > 0) setCommandStatus(`已收进 ${importedCount} 条心跳消息。`);
+        if (importedCount > 0) setCommandStatusRef.current(`已收进 ${importedCount} 条心跳消息。`);
       } catch (error) {
-        if (controller.signal.aborted) return;
+        if (signal.aborted) return;
         const message = error instanceof Error ? error.message : '同步心跳消息失败。';
-        setCommandStatus(message, true);
-      } finally {
-        runningRef.current = false;
+        setCommandStatusRef.current(message, true);
       }
-    })();
+    });
 
-    return () => controller.abort();
-  }, [setCommandStatus, startupReady, wakeTick]);
+    const wake = () => runner.request();
+    const replaceConfig = () => runner.request(true);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'hidden') wake();
+    };
+
+    window.addEventListener('focus', wake);
+    window.addEventListener('pageshow', wake);
+    window.addEventListener(HEARTBEAT_INBOX_CONFIG_CHANGED_EVENT, replaceConfig);
+    window.addEventListener(HEARTBEAT_INBOX_SYNC_REQUESTED_EVENT, wake);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    runner.request();
+
+    return () => {
+      runner.stop();
+      window.removeEventListener('focus', wake);
+      window.removeEventListener('pageshow', wake);
+      window.removeEventListener(HEARTBEAT_INBOX_CONFIG_CHANGED_EVENT, replaceConfig);
+      window.removeEventListener(HEARTBEAT_INBOX_SYNC_REQUESTED_EVENT, wake);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [startupReady]);
 }

@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import type { MenuOverlayPage } from '../../app/shell/appShellContracts';
-import { fetchHeartbeatPolicy } from '../../app/heartbeat/heartbeatPolicyClient';
+import {
+  fetchHeartbeatPolicy,
+  HEARTBEAT_POLICY_CHANGED_EVENT
+} from '../../app/heartbeat/heartbeatPolicyClient';
 import { HEARTBEAT_INBOX_CONFIG_CHANGED_EVENT } from '../../app/heartbeat/heartbeatInboxSettings';
 import { relationshipDays } from '../../app/endlessSummer/relationshipDays';
 import { canCheckAndroidApkUpdate } from '../../app/android/androidApkUpdateRuntime';
@@ -65,6 +68,7 @@ function Flower({ className = '' }: { className?: string }) {
 function useHeartbeatMode() {
   const [mode, setMode] = useState('状态未知');
   const [known, setKnown] = useState(false);
+  const [enabled, setEnabled] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,6 +78,7 @@ function useHeartbeatMode() {
         if (!cancelled) {
           setMode(snapshot.active.profileName?.trim() || '状态未知');
           setKnown(Boolean(snapshot.active.profileName?.trim()));
+          setEnabled(snapshot.policy.enabled);
         }
       } catch {
         if (!cancelled) {
@@ -84,13 +89,15 @@ function useHeartbeatMode() {
     };
     void load();
     window.addEventListener(HEARTBEAT_INBOX_CONFIG_CHANGED_EVENT, load);
+    window.addEventListener(HEARTBEAT_POLICY_CHANGED_EVENT, load);
     return () => {
       cancelled = true;
       window.removeEventListener(HEARTBEAT_INBOX_CONFIG_CHANGED_EVENT, load);
+      window.removeEventListener(HEARTBEAT_POLICY_CHANGED_EVENT, load);
     };
   }, []);
 
-  return { mode, known };
+  return { mode, known, enabled };
 }
 
 function ScreenHeading({ title, subtitle }: { title: string; subtitle: string }) {
@@ -260,7 +267,7 @@ function FeaturesPage({
       <ScreenHeading title="功能" subtitle="我们可以一起做的事" />
       <button type="button" className="es-feature-hero" onClick={() => onOpenSettingsPage('automation')}>
         <Flower />
-        <span><strong>主动联系</strong><small>频率、时段与消息回流</small><em>{heartbeat.known ? `当前 · ${heartbeat.mode}` : '状态未知'}</em></span>
+        <span><strong>主动联系</strong><small>频率、时段与消息回流</small><em>{heartbeat.known ? heartbeat.enabled ? `当前 · ${heartbeat.mode}` : '主动消息已暂停' : '状态未知'}</em></span>
         <Icon name="send" size={46} />
         <b>›</b>
       </button>
@@ -398,7 +405,7 @@ function ChatHeader({ collaboratorName, onOpenDrawer, onOpenSettings, onOpenSett
   return (
     <header className="es-chat-header">
       <button type="button" onClick={onOpenDrawer} aria-label="打开聊天列表"><span /><span /><span /></button>
-      <div><strong>{collaboratorName || '当前聊天'}</strong><small>当前主聊天</small><button type="button" onClick={() => onOpenSettingsPage('automation')}>主动 · {heartbeat.mode}</button></div>
+      <div><strong>{collaboratorName || '当前聊天'}</strong><small>当前主聊天</small><button type="button" onClick={() => onOpenSettingsPage('automation')}>{heartbeat.known && !heartbeat.enabled ? '主动消息已暂停' : `主动 · ${heartbeat.mode}`}</button></div>
       <button type="button" onClick={onOpenSettings} aria-label="聊天设置"><i>•••</i></button>
       <Flower className="es-chat-flower-one" /><Flower className="es-chat-flower-two" />
     </header>
