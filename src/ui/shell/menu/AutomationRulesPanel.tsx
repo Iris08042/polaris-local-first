@@ -6,6 +6,7 @@ import { HeartbeatRuntimeSettingsPanel } from './HeartbeatRuntimeSettingsPanel';
 type ConversationSelectMode = PolarisTriggerRule['target']['conversationMode'];
 
 export type AutomationRulesPanelProps = {
+  activeTab?: HeartbeatSettingsTab;
   personas: Persona[];
   conversations: Conversation[];
   triggerRules: PolarisTriggerRule[];
@@ -30,20 +31,43 @@ export type AutomationRulesPanelProps = {
   onAfterTestTriggerRule?: () => void;
 };
 
+export type HeartbeatSettingsTab = 'model' | 'prompt' | 'policy' | 'inbox';
+
 export function AutomationRulesPanel({
+  activeTab,
   personas,
   conversations,
   lockedCollaboratorId
 }: AutomationRulesPanelProps) {
+  if (activeTab === undefined) {
+    return (
+      <div className="automation-panel heartbeat-automation-panel">
+        <HeartbeatInboxSettingsCard
+          personas={personas}
+          conversations={conversations}
+          lockedCollaboratorId={lockedCollaboratorId}
+        />
+        <HeartbeatRuntimeSettingsPanel />
+        <HeartbeatPolicyPanel />
+      </div>
+    );
+  }
+
   return (
     <div className="automation-panel heartbeat-automation-panel">
-      <HeartbeatInboxSettingsCard
-        personas={personas}
-        conversations={conversations}
-        lockedCollaboratorId={lockedCollaboratorId}
-      />
-      <HeartbeatRuntimeSettingsPanel />
-      <HeartbeatPolicyPanel />
+      <div className="heartbeat-tab-panel" hidden={activeTab !== 'model' && activeTab !== 'prompt'}>
+        <HeartbeatRuntimeSettingsPanel section={activeTab === 'prompt' ? 'prompt' : 'model'} />
+      </div>
+      <div className="heartbeat-tab-panel" hidden={activeTab !== 'policy'}>
+        <HeartbeatPolicyPanel />
+      </div>
+      <div className="heartbeat-tab-panel" hidden={activeTab !== 'inbox'}>
+        <HeartbeatInboxSettingsCard
+          personas={personas}
+          conversations={conversations}
+          lockedCollaboratorId={lockedCollaboratorId}
+        />
+      </div>
     </div>
   );
 }

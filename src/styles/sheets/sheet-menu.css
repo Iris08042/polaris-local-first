@@ -1005,6 +1005,51 @@
 .heartbeat-automation-panel {
   gap: 18px;
 }
+.heartbeat-settings-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  padding: 5px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, rgba(255,255,255,.3));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-solid) 90%, rgba(255,255,255,.38));
+  box-shadow: 0 8px 20px rgba(78, 72, 66, .08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.heartbeat-settings-tabs button {
+  min-width: 0;
+  min-height: 42px;
+  padding: 7px 3px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--sheet-readable-muted);
+  font: inherit;
+  font-size: var(--type-small);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.heartbeat-settings-tabs button.is-active {
+  background: color-mix(in srgb, var(--accent-soft) 82%, rgba(255,255,255,.5));
+  color: var(--accent);
+  font-weight: 700;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.heartbeat-tab-panel[hidden] {
+  display: none;
+}
+.heartbeat-tab-panel,
+.heartbeat-tab-panel > * {
+  min-width: 0;
+  width: 100%;
+}
 .menu-automation-page {
   min-width: 0;
   max-width: 100%;

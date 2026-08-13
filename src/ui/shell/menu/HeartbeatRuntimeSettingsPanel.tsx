@@ -15,7 +15,11 @@ import { HEARTBEAT_INBOX_CONFIG_CHANGED_EVENT } from '../../../app/heartbeat/hea
 
 const MASKED_KEY = '••••••••••••••••';
 
-export function HeartbeatRuntimeSettingsPanel() {
+type HeartbeatRuntimeSettingsPanelProps = {
+  section?: 'model' | 'prompt';
+};
+
+export function HeartbeatRuntimeSettingsPanel({ section }: HeartbeatRuntimeSettingsPanelProps) {
   const [modelConfig, setModelConfig] = useState<HeartbeatModelConfig | null>(null);
   const [promptConfig, setPromptConfig] = useState<HeartbeatPromptConfig | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
@@ -231,13 +235,13 @@ export function HeartbeatRuntimeSettingsPanel() {
     <section className="heartbeat-policy heartbeat-runtime-settings">
       <header className="heartbeat-policy__header">
         <div>
-          <h3>心跳模型与提示词</h3>
-          <p>这里的模型只供主动消息使用，不影响普通聊天。</p>
+          <h3>{section === 'model' ? '模型' : section === 'prompt' ? '提示词' : '心跳模型与提示词'}</h3>
+          <p>{section === 'prompt' ? '决定叶明舟何时、如何主动联系你。' : '这里的模型只供主动消息使用，不影响普通聊天。'}</p>
         </div>
         <button className="mcp-btn" type="button" onClick={() => void load()} disabled={loading || busy}>刷新</button>
       </header>
 
-      <div className="heartbeat-policy__section">
+      {section !== 'prompt' ? <div className="heartbeat-policy__section">
         <div className="heartbeat-policy__section-head">
           <div><h4>主动消息线路方案</h4><p>切换时会一起更换站点、密钥和模型。</p></div>
           <button className="mcp-btn" type="button" disabled={busy} onClick={() => {
@@ -290,9 +294,9 @@ export function HeartbeatRuntimeSettingsPanel() {
         </div>
         <button className="heartbeat-policy__save" type="button" onClick={() => void saveProfile()} disabled={busy}>{busy ? '正在处理…' : '保存并启用此方案'}</button>
         {feedbackTarget === 'model' && (error || notice) && <p aria-live="polite" className={`heartbeat-policy-state${error ? ' heartbeat-policy-state--error' : ''}`}>{error || notice}</p>}
-      </div>
+      </div> : null}
 
-      <div className="heartbeat-policy__section">
+      {section !== 'model' ? <div className="heartbeat-policy__section">
         <div className="heartbeat-policy__section-head">
           <div><h4>主动消息提示词</h4><p>当前来源：{promptConfig?.source === 'heartbeat' ? '独立配置' : promptConfig?.source === 'file' ? '服务器文件' : promptConfig?.source === 'environment' ? '腾讯云环境变量' : '代码默认值'}</p></div>
         </div>
@@ -300,7 +304,7 @@ export function HeartbeatRuntimeSettingsPanel() {
         <p className="heartbeat-policy__note">可以使用 {'${currentTime}'}、{'${diffMinutes}'} 和 {'${weatherContext}'}；投递格式、连续心理活动和防重复规则由系统自动附加。</p>
         <button className="heartbeat-policy__save" type="button" onClick={() => void savePrompt()} disabled={savingPrompt}>{savingPrompt ? '正在保存…' : '保存提示词'}</button>
         {feedbackTarget === 'prompt' && (error || notice) && <p aria-live="polite" className={`heartbeat-policy-state${error ? ' heartbeat-policy-state--error' : ''}`}>{error || notice}</p>}
-      </div>
+      </div> : null}
     </section>
   );
 }
