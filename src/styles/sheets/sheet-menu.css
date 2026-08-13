@@ -1204,6 +1204,18 @@
   align-items: end;
   gap: 10px;
 }
+.heartbeat-runtime-settings__model-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+.heartbeat-runtime-settings__model-row .mcp-btn {
+  min-height: 42px;
+}
+.heartbeat-runtime-settings__actions {
+  justify-content: space-between;
+}
 .heartbeat-runtime-settings__secret .mcp-btn {
   min-height: 42px;
 }
@@ -1256,7 +1268,8 @@
   .heartbeat-policy__thresholds {
     grid-template-columns: 1fr;
   }
-  .heartbeat-runtime-settings__secret {
+  .heartbeat-runtime-settings__secret,
+  .heartbeat-runtime-settings__model-row {
     grid-template-columns: 1fr;
   }
   .heartbeat-policy__schedule-head .ps-input:nth-of-type(2) {

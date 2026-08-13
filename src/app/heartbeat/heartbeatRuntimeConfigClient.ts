@@ -1,6 +1,18 @@
 import { readHeartbeatInboxConfig } from './heartbeatInboxSettings';
 
+export type HeartbeatModelProfile = {
+  id: string;
+  name: string;
+  baseUrl: string;
+  model: string;
+  apiKeyConfigured: boolean;
+};
+
 export type HeartbeatModelConfig = {
+  version: 2;
+  activeProfileId: string;
+  profiles: HeartbeatModelProfile[];
+  baseUrl: string;
   apiUrl: string;
   model: string;
   apiKeyConfigured: boolean;
@@ -24,9 +36,10 @@ export function heartbeatRuntimeConfigEndpoint(inboxEndpoint: string, kind: 'mod
   return `${inboxEndpoint.replace(/\/inbox$/, '')}/${kind}`;
 }
 
-async function requestConfig<T>(kind: 'model' | 'prompt', method: 'GET' | 'PUT', body?: object) {
+async function requestConfig<T>(path: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', body?: object) {
   const config = connection();
-  const response = await fetch(heartbeatRuntimeConfigEndpoint(config.endpoint, kind), {
+  const root = config.endpoint.replace(/\/inbox$/, '');
+  const response = await fetch(`${root}/${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${config.token}`,
@@ -39,7 +52,7 @@ async function requestConfig<T>(kind: 'model' | 'prompt', method: 'GET' | 'PUT',
     const problem = result && typeof result === 'object' && ('error' in result || 'message' in result)
       ? result.error || result.message
       : null;
-    throw new Error(problem || `心跳${kind === 'model' ? '模型' : '提示词'}请求失败（${response.status}）`);
+    throw new Error(problem || `主动消息设置请求失败（${response.status}）`);
   }
   return result as T;
 }
@@ -48,8 +61,32 @@ export function fetchHeartbeatModelConfig() {
   return requestConfig<HeartbeatModelConfig>('model', 'GET');
 }
 
-export function saveHeartbeatModelConfig(config: { apiUrl: string; model: string; apiKey?: string }) {
-  return requestConfig<HeartbeatModelConfig>('model', 'PUT', config);
+export type HeartbeatModelProfileDraft = {
+  id?: string;
+  name: string;
+  baseUrl: string;
+  model: string;
+  apiKey?: string;
+};
+
+export function saveHeartbeatModelProfile(profile: HeartbeatModelProfileDraft) {
+  return requestConfig<HeartbeatModelConfig>('model/profile', 'PUT', profile);
+}
+
+export function activateHeartbeatModelProfile(id: string) {
+  return requestConfig<HeartbeatModelConfig>('model/active', 'PUT', { id });
+}
+
+export function deleteHeartbeatModelProfile(id: string) {
+  return requestConfig<HeartbeatModelConfig>(`model/profile/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+export function fetchHeartbeatModels(profile: Omit<HeartbeatModelProfileDraft, 'name'>) {
+  return requestConfig<{ models: string[] }>('model/models', 'POST', profile);
+}
+
+export function testHeartbeatModel(profile: Omit<HeartbeatModelProfileDraft, 'name'>) {
+  return requestConfig<{ ok: true; model: string; reply: string }>('model/test', 'POST', profile);
 }
 
 export function fetchHeartbeatPromptConfig() {
