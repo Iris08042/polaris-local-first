@@ -372,6 +372,7 @@ async function requestReplyRound({
       personas: activeRequestSnapshot.personas,
       semanticRecallEnabled: activeRequestSnapshot.semanticRecallEnabled,
       messages: requestMessages,
+      rollingSummary: writableConversation.conversation.rollingSummary ?? null,
       semanticRecallConversations: activeRequestSnapshot.semanticRecallConversations ?? activeRequestSnapshot.conversations,
       loadSemanticRecallConversations,
       activeConversationId: conversationId,

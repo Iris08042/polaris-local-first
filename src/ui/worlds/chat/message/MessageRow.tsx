@@ -462,6 +462,11 @@ function MessageRowComponent({
                 />
               ) : null}
               {messageBubble}
+              {message.activityReceipts?.length ? (
+                <div className="message-activity-receipts" role="status">
+                  {message.activityReceipts.map((receipt) => <small key={receipt}>{receipt}</small>)}
+                </div>
+              ) : null}
               {toolMessages.length > 0 ? (
                 <div className="assistant-leading-tool-list">
                   {toolMessages.map((toolMessage) => (

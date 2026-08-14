@@ -183,6 +183,7 @@ export function buildConversationRecordLocalDataRow(args: ChatConversationLocalD
     committedAt: args.committedAt,
     messages: snapshot.messages,
     task: snapshot.task ?? null,
+    rollingSummary: snapshot.rollingSummary ?? null,
     draft: snapshot.draft ?? '',
     workspaceLedger: snapshot.workspaceLedger ?? [],
     ownerProjectId: snapshot.activeProjectId ?? null,

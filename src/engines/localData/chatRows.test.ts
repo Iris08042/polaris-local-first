@@ -150,6 +150,7 @@ describe('conversation durable projection contract', () => {
       groupRoomId: 'durable',
       activeProjectId: 'durable',
       messages: 'durable',
+      rollingSummary: 'durable',
       toolLedger: 'derived',
       workspaceLedger: 'durable',
       task: 'durable',
@@ -168,6 +169,7 @@ describe('conversation durable projection contract', () => {
       'messages',
       'workspaceLedger',
       'task',
+      'rollingSummary',
       'draft',
       'pinnedAt',
       'updatedAt'

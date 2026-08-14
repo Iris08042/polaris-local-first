@@ -6,7 +6,12 @@ export function getVisibleToolboxPromptGroups({
 }: {
   desktopLocalAvailable: boolean;
 }): PolarisToolPromptGroup[] {
-  return POLARIS_TOOLBOX_PROMPT_GROUP_ORDER.filter((group) => group !== 'desktop' || desktopLocalAvailable);
+  return POLARIS_TOOLBOX_PROMPT_GROUP_ORDER.filter((group) => (
+    group !== 'memory'
+    && group !== 'memoryRecall'
+    && group !== 'memoryWrite'
+    && (group !== 'desktop' || desktopLocalAvailable)
+  ));
 }
 
 export function countEnabledVisibleToolboxGroups(

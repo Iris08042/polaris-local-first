@@ -14,8 +14,11 @@ import { Icon, type IconName } from '../Icon';
 import { AppTopbar, type AppTopbarProps } from '../shell/AppTopbar';
 import type { DesktopAppSidebarProps } from '../app-shell/DesktopAppSidebar';
 import { useAssetObjectUrl } from '../useAssetObjectUrl';
+import { OmbreMemoryPage } from './OmbreMemoryPage';
+import { RollingSummaryPage } from './RollingSummaryPage';
 
-type PrimaryPage = 'chat' | 'memory' | 'home' | 'features' | 'settings' | 'collection' | 'legacy';
+type NavigationPage = 'chat' | 'memory' | 'home' | 'features' | 'settings';
+type PrimaryPage = NavigationPage | 'collection' | 'legacy' | 'ombre' | 'rolling';
 type CollectionParentPage = 'memory' | 'features' | 'settings';
 type MobileConversationNavigation = Omit<DesktopAppSidebarProps, 'collapsed' | 'onToggleCollapsed'>;
 
@@ -37,7 +40,7 @@ export type EndlessSummerShellProps = {
   onOpenProviderSettings: () => void;
 };
 
-const NAV_ITEMS: Array<{ page: Exclude<PrimaryPage, 'legacy'>; label: string }> = [
+const NAV_ITEMS: Array<{ page: NavigationPage; label: string }> = [
   { page: 'chat', label: '聊天' },
   { page: 'memory', label: '记忆' },
   { page: 'home', label: '小窝' },
@@ -49,7 +52,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function NavIcon({ page }: { page: Exclude<PrimaryPage, 'legacy'> }) {
+function NavIcon({ page }: { page: NavigationPage }) {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true">
       {page === 'chat' ? <path d="M5 6.5h22v15H14l-6.5 5v-5H5z" /> : null}
@@ -236,21 +239,15 @@ function HomePage({
   );
 }
 
-function MemoryPage({ onOpenCollectionShelf, onOpenSettingsPage }: Pick<EndlessSummerShellProps, 'onOpenCollectionShelf' | 'onOpenSettingsPage'>) {
+function MemoryPage({ onOpenOmbre, onOpenRolling }: { onOpenOmbre: () => void; onOpenRolling: () => void }) {
   return (
     <section className="es-page es-scroll-page">
       <ScreenHeading title="记忆" subtitle="我们记得的事" />
-      <button type="button" className="es-ob-card" onClick={() => onOpenSettingsPage('memory')}>
-        <span><strong>长期记忆 · OB</strong><small><i />未连接 · 连接后显示长期记忆</small></span><b>›</b>
+      <button type="button" className="es-ob-card" onClick={onOpenOmbre}>
+        <span><strong>长期记忆</strong><em>Ombre Brain</em><small><i />浏览、搜索与整理长期记忆</small></span><b>›</b>
       </button>
-      <div className="es-memory-grid">
-        <HubCard icon="memoryMap" title="动态记忆" detail="我们现在的状态" disabled />
-        <HubCard icon="layers" title="滚动摘要" detail="最近这段时间" disabled />
-        <HubCard icon="openBook" title="原始档案" detail="完整聊天记录" onClick={() => onOpenCollectionShelf('dialogue')} />
-        <HubCard icon="fileText" title="长期资料" detail="设定与重要内容" onClick={() => onOpenCollectionShelf('info')} />
-      </div>
-      <button type="button" className="es-search-memory" onClick={() => onOpenSettingsPage('memory')}>
-        <Icon name="search" size={22} />搜索记忆
+      <button type="button" className="es-ob-card es-rolling-card" onClick={onOpenRolling}>
+        <span><strong>滚动摘要</strong><em>Rolling Summary</em><small>最近这段聊天的连续上下文</small></span><b>›</b>
       </button>
     </section>
   );
@@ -503,13 +500,13 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
     props.onOpenGroup();
     setPage('legacy');
   };
-  const navigate = (next: Exclude<PrimaryPage, 'legacy'>) => {
+  const navigate = (next: NavigationPage) => {
     if (next === 'chat') props.onOpenChat();
     setPage(next);
   };
-  const selectedNavPage = page === 'legacy'
+  const selectedNavPage: NavigationPage = page === 'legacy'
     ? (props.activeWorld === 'chat' ? 'chat' : 'features')
-    : page === 'collection' ? collectionParentPage : page;
+    : page === 'collection' ? collectionParentPage : page === 'ombre' || page === 'rolling' ? 'memory' : page;
 
   return (
     <div className={`es-shell es-page-${selectedNavPage}`}>
@@ -528,7 +525,9 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
         />
       ) : null}
       {page === 'home' ? <HomePage customization={props.customization} setCustomization={props.setCustomization} onChooseImage={chooseImage} onOpenSettings={() => navigate('settings')} /> : null}
-      {page === 'memory' ? <MemoryPage onOpenCollectionShelf={(shelf) => openCollectionShelf(shelf, 'memory')} onOpenSettingsPage={props.onOpenSettingsPage} /> : null}
+      {page === 'memory' ? <MemoryPage onOpenOmbre={() => setPage('ombre')} onOpenRolling={() => setPage('rolling')} /> : null}
+      {page === 'ombre' ? <OmbreMemoryPage onBack={() => setPage('memory')} /> : null}
+      {page === 'rolling' ? <RollingSummaryPage onBack={() => setPage('memory')} /> : null}
       {page === 'features' ? <FeaturesPage onOpenSettingsPage={props.onOpenSettingsPage} onOpenCollectionShelf={(shelf) => openCollectionShelf(shelf, 'features')} onOpenGroup={openLegacyGroup} /> : null}
       {page === 'settings' ? <SettingsPage collaboratorName={props.collaboratorName} customization={props.customization} setCustomization={props.setCustomization} onChooseImage={chooseImage} onOpenCollectionShelf={(shelf) => openCollectionShelf(shelf, 'settings')} onOpenSettingsPage={props.onOpenSettingsPage} onOpenProviderSettings={props.onOpenProviderSettings} /> : null}
       {uploadError ? <p className="es-upload-error" role="alert">{uploadError}</p> : null}

@@ -83,16 +83,6 @@ function isImageGenerationAvailable(args: {
     && (args.providers?.some((provider) => provider.id === providerId) ?? false);
 }
 
-function isMemorySearchAvailable(args: {
-  collaborator?: Persona | null;
-  memoryVectorRetrieval?: MemoryVectorRetrievalSettings;
-}) {
-  if (!args.collaborator) return false;
-  return Boolean(args.collaborator)
-    && (args.collaborator.memory?.crossConversationRecallEnabled !== false
-      || args.memoryVectorRetrieval?.enabled === true);
-}
-
 export type ChatReplyRequestSnapshot = {
   api: ProviderProfile;
   providers?: ProviderProfile[];
@@ -289,10 +279,7 @@ export function buildReplyToolContext(args: {
     settings: snapshot.imageGeneration,
     providers: snapshot.providers
   });
-  const memorySearchAvailable = isMemorySearchAvailable({
-    collaborator: collaboratorForReply,
-    memoryVectorRetrieval: snapshot.memoryVectorRetrieval
-  });
+  const memorySearchAvailable = false;
   const personalDataAvailability = getNativePersonalDataToolAvailability();
   const workContext = buildWorkContext({
     currentTask: snapshot.currentTask,

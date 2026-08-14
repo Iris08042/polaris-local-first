@@ -182,6 +182,7 @@ export type ConversationRecordRow = {
   committedAt: number;
   messages: ChatMessage[];
   task: ConversationTaskState | null;
+  rollingSummary?: import('../../types/domain').ConversationRollingSummary | null;
   draft: string;
   workspaceLedger: WorkspaceLedgerEvent[];
   ownerProjectId: string | null;

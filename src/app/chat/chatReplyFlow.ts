@@ -1,4 +1,4 @@
-import type { ChatMessage } from '../../types/domain';
+import type { ChatMessage, Conversation } from '../../types/domain';
 import { resolvePersonaProviderBinding } from '../../engines/personaProviderBinding';
 import { isPolarisToolPromptGroupEnabled } from '../../engines/tool-protocol/toolPromptPreferences';
 import { resolvePersonaMcpServers } from '../persona/personaMcpSettings';
@@ -7,10 +7,6 @@ import type { ToolActions } from './chatToolActions';
 import type { ChatDerivedStatePort, ChatReplyStoreBindings, ChatUiReplyControllerState } from './chatPorts';
 import { createChatReplyRequestSnapshot } from './chatReplyContext';
 import type { ChatReplyRequestSnapshotSource } from './chatReplyContext';
-import {
-  readRequestSemanticRecallConversationBodies,
-  readRequestSemanticRecallConversations
-} from './chatSemanticRecallCorpus';
 import { recordChatSendPerformanceMark } from './chatSendPerformanceTrace';
 import { selectChatConversations } from './liveConversationCatalog';
 
@@ -57,8 +53,7 @@ export function createChatReplyRunner({
   resolveGenerationKey,
   overrideReplyChatPort,
   buildRequestMessages,
-  overrideRequestSource,
-  resolveSemanticRecallEnabled
+  overrideRequestSource
 }: CreateChatReplyRunnerArgs) {
   return async (params: {
     conversationId: string;
@@ -83,41 +78,15 @@ export function createChatReplyRunner({
     recordChatSendPerformanceMark(params.conversationId, '聊天发送 · 回复历史就绪', {
       messageCount: requestMessages.length
     });
-    const defaultSemanticRecallEnabled = activeCollaborator?.memory?.crossConversationRecallEnabled !== false;
-    const semanticRecallEnabled = resolveSemanticRecallEnabled?.({
-      conversationId: params.conversationId,
-      collaboratorId: params.collaboratorId,
-      activeCollaborator,
-      defaultEnabled: defaultSemanticRecallEnabled
-    }) ?? defaultSemanticRecallEnabled;
-    const semanticRecallChatState = store.chat.readLatestState();
-    const semanticRecallLiveConversations = selectChatConversations(semanticRecallChatState.conversations, {
-      includeGroupConversations
-    });
-    const semanticRecallConversations = semanticRecallEnabled
-      ? await readRequestSemanticRecallConversations({
-          liveConversations: semanticRecallLiveConversations,
-          activeConversationId: params.conversationId,
-          activeMessages: requestMessages,
-          currentCollaboratorId: params.collaboratorId,
-          config: activeCollaborator?.memory?.semanticRecall
-        })
-      : [];
+    const semanticRecallEnabled = false;
+    const semanticRecallConversations: Conversation[] = [];
     recordChatSendPerformanceMark(params.conversationId, '聊天发送 · 记忆召回目录就绪', {
       messageCount: requestMessages.length,
       extra: [
         semanticRecallEnabled ? `recall ${semanticRecallConversations.length}` : 'recall off'
       ]
     });
-    const loadSemanticRecallConversations = async (conversationIds: string[]) =>
-      semanticRecallEnabled
-        ? await readRequestSemanticRecallConversationBodies({
-            conversationIds,
-            catalogConversations: semanticRecallConversations,
-            activeConversationId: params.conversationId,
-            activeMessages: requestMessages
-          })
-        : [];
+    const loadSemanticRecallConversations = async (_conversationIds: string[]) => [];
     const runtimeState = store.runtime.readLatestState();
     const taskToolsEnabled = isPolarisToolPromptGroupEnabled(runtimeState.toolPromptPreferences, 'task');
     const effectiveTaskModeEnabled = taskToolsEnabled && runtimeState.taskModeEnabled;
@@ -163,7 +132,12 @@ export function createChatReplyRunner({
           collectionShelf: spaceState.collectionShelf,
           chatAvatarLayoutEnabled: spaceState.customization.showChatAvatars,
           themeToolMode: spaceState.themeToolMode,
-          enabledToolGroups: runtimeState.toolPromptPreferences,
+          enabledToolGroups: {
+            ...runtimeState.toolPromptPreferences,
+            memory: false,
+            memoryRecall: false,
+            memoryWrite: false
+          },
           taskModeEnabled: effectiveTaskModeEnabled,
           mcpServers: resolvePersonaMcpServers({
             persona: snapshotActiveCollaborator,

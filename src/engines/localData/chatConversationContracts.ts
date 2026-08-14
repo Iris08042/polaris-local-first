@@ -22,6 +22,7 @@ export const CONVERSATION_FIELD_CLASSIFICATION = {
   toolLedger: 'derived',
   workspaceLedger: 'durable',
   task: 'durable',
+  rollingSummary: 'durable',
   draft: 'durable',
   pinnedAt: 'durable',
   updatedAt: 'durable'
@@ -48,6 +49,7 @@ export const CONVERSATION_DURABLE_FIELDS = [
   'messages',
   'workspaceLedger',
   'task',
+  'rollingSummary',
   'draft',
   'pinnedAt',
   'updatedAt'
@@ -94,6 +96,7 @@ export function toConversationDurableSnapshot(conversation: Conversation): Conve
     messages: conversation.messages,
     workspaceLedger: conversation.workspaceLedger,
     task: conversation.task,
+    rollingSummary: conversation.rollingSummary,
     draft: conversation.draft,
     pinnedAt: conversation.pinnedAt,
     updatedAt: conversation.updatedAt

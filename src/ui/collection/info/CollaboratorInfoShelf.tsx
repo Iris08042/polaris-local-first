@@ -2,11 +2,8 @@ import { useEffect, useState } from 'react';
 import type { CollaboratorInfoOverviewItem } from '../../../app/collection/buildCollaboratorInfoOverview';
 import type { Conversation, McpServerConfig, Persona, PolarisTriggerRule, PolarisTriggerSchedule, ProviderProfile } from '../../../types/domain';
 import { BasicSettingsTab } from '../../shell/persona/settings/BasicSettingsTab';
-import { MemorySettingsTab } from '../../shell/persona/settings/MemorySettingsTab';
 import { PromptSettingsTab } from '../../shell/persona/settings/PromptSettingsTab';
 import { RequestSettingsTab } from '../../shell/persona/settings/RequestSettingsTab';
-import { RoomSettingsTab } from '../../shell/persona/settings/RoomSettingsTab';
-import { AutomationRulesPanel } from '../../shell/menu/AutomationRulesPanel';
 import type { PersonaUpdatePatch } from '../../shell/persona/personaUiShared';
 import { CollaboratorOverviewRail } from './CollaboratorOverviewRail';
 import { CollaboratorCreatePicker } from '../../worlds/chat/collaborator/CollaboratorCreatePicker';
@@ -15,15 +12,12 @@ import { isCompanionCollaboratorId } from '../../../engines/companion';
 import { isProductGuidePersona } from '../../../engines/personaBuiltin';
 import type { I18nKey } from '../../../i18n/messages';
 import { useI18n } from '../../../i18n/useI18n';
-const INFO_TABS = ['identity', 'prompt', 'memory', 'room', 'automation', 'request'] as const;
+const INFO_TABS = ['identity', 'prompt', 'request'] as const;
 type CollaboratorInfoTab = (typeof INFO_TABS)[number];
-const PRODUCT_GUIDE_INFO_TABS = INFO_TABS.filter((tab) => tab !== 'prompt' && tab !== 'automation' && tab !== 'request');
+const PRODUCT_GUIDE_INFO_TABS = INFO_TABS.filter((tab) => tab === 'identity');
 const INFO_TAB_LABEL_KEYS = {
   identity: 'collaborator.info.tab.identity',
   prompt: 'collaborator.info.tab.prompt',
-  memory: 'collaborator.info.tab.memory',
-  room: 'collaborator.info.tab.room',
-  automation: 'collaborator.info.tab.automation',
   request: 'collaborator.info.tab.request'
 } satisfies Record<CollaboratorInfoTab, I18nKey>;
 
@@ -73,8 +67,6 @@ export function CollaboratorInfoShelf({
   showChatAvatars,
   providers,
   activeProviderId,
-  conversations,
-  triggerRules,
   mcpServers,
   mcpToolTimeoutSeconds,
   collaboratorOverviewItems,
@@ -87,11 +79,6 @@ export function CollaboratorInfoShelf({
   onCreateFromBuilder,
   onCreateCustomCollaborator,
   onOpenProviderSettings,
-  onCreateTriggerRule,
-  onUpdateTriggerRule,
-  onDeleteTriggerRule,
-  onTestTriggerRule,
-  onCopyTriggerUrl,
   onCreateMcpServer,
   onUpdateMcpServer
 }: CollaboratorInfoShelfProps) {
@@ -212,56 +199,12 @@ export function CollaboratorInfoShelf({
                   )}
               />
             )}
-            {activeTab === 'room' && (
-              <RoomSettingsTab
-                activeCollaboratorId={currentCollaboratorId}
-                activePersona={currentCollaborator}
-                onUpdatePersona={onUpdateCollaborator}
-                onSelectPersonaAvatar={onSelectCollaboratorAvatar}
-                onSetPersonaAvatarIcon={(role, iconId) =>
-                  onUpdateCollaborator(
-                    role === 'assistant' ? { assistantAvatarIconId: iconId } : { userAvatarIconId: iconId }
-                  )}
-                onSetPersonaAvatarShape={(role, shape) =>
-                  onUpdateCollaborator(
-                    role === 'assistant' ? { assistantAvatarShape: shape } : { userAvatarShape: shape }
-                  )}
-                onSetPersonaAvatarSize={(role, size) =>
-                  onUpdateCollaborator(
-                    role === 'assistant' ? { assistantAvatarSize: size } : { userAvatarSize: size }
-                  )}
-              />
-            )}
             {activeTab === 'prompt' && (
               <PromptSettingsTab
                 activeCollaboratorId={currentCollaboratorId}
                 activePersona={currentCollaborator}
                 onUpdatePersona={onUpdateCollaborator}
                 expandedUsesPageScroll={fullscreenOpen}
-              />
-            )}
-            {activeTab === 'memory' && (
-              <MemorySettingsTab
-                activeCollaboratorId={currentCollaboratorId}
-                activePersona={currentCollaborator}
-                onUpdatePersona={onUpdateCollaborator}
-              />
-            )}
-            {activeTab === 'automation' && (
-              <AutomationRulesPanel
-                personas={[currentCollaborator]}
-                conversations={conversations}
-                triggerRules={triggerRules}
-                lockedCollaboratorId={currentCollaboratorId}
-                emptyTitle={t('settings.automation.collaboratorEmptyTitle')}
-                emptyActionLabel={t('settings.automation.collaboratorEmptyAction')}
-                formNote={t('settings.automation.collaboratorFormNote')}
-                rulesNote={t('settings.automation.collaboratorRulesNote')}
-                onCreateTriggerRule={onCreateTriggerRule}
-                onUpdateTriggerRule={onUpdateTriggerRule}
-                onDeleteTriggerRule={onDeleteTriggerRule}
-                onTestTriggerRule={onTestTriggerRule}
-                onCopyTriggerUrl={onCopyTriggerUrl}
               />
             )}
             {activeTab === 'request' && (

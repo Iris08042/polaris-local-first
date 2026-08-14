@@ -301,7 +301,7 @@ describe('prepareCollaboratorReplyRequest semantic recall', () => {
     expect(prepared.context.segments.some((segment) => segment.kind === 'conversation_summary')).toBe(false);
   });
 
-  it('keeps short memory entries while a request-level switch disables recall lanes', async () => {
+  it('disables native personal memory together with the old recall lanes', async () => {
     const persona = createPersonaTemplate({
       id: 'pharos',
       name: 'Pharos',
@@ -341,12 +341,12 @@ describe('prepareCollaboratorReplyRequest semantic recall', () => {
 
     expect(prepared.audit.semanticRecallPlan.status).toBe('disabled');
     expect(prepared.audit.conversationSummaryPlan.status).toBe('disabled');
-    expect(memorySegment?.messages[0]?.content).toContain('喜欢直接说清楚边界。');
+    expect(memorySegment).toBeUndefined();
     expect(prepared.context.segments.some((segment) => segment.kind === 'semantic_recall')).toBe(false);
     expect(prepared.context.segments.some((segment) => segment.kind === 'conversation_summary')).toBe(false);
   });
 
-  it('keeps cross-conversation recall enabled by default for existing collaborators', async () => {
+  it('keeps cross-conversation recall disabled for existing collaborators', async () => {
     const persona = createPersonaTemplate({
       id: 'pharos',
       name: 'Pharos',
@@ -366,11 +366,11 @@ describe('prepareCollaboratorReplyRequest semantic recall', () => {
       activeConversationId: 'active'
     });
 
-    expect(prepared.audit.semanticRecallPlan.status).toBe('within_budget');
-    expect(prepared.context.segments.some((segment) => segment.kind === 'semantic_recall')).toBe(true);
+    expect(prepared.audit.semanticRecallPlan.status).toBe('disabled');
+    expect(prepared.context.segments.some((segment) => segment.kind === 'semantic_recall')).toBe(false);
   });
 
-  it('passes stored conversation summaries into the cross-conversation context lane', async () => {
+  it('does not pass stored native conversation summaries into the request', async () => {
     const persona = createPersonaTemplate({
       id: 'pharos',
       name: 'Pharos',
@@ -399,17 +399,13 @@ describe('prepareCollaboratorReplyRequest semantic recall', () => {
     });
     const summarySegment = prepared.context.segments.find((segment) => segment.kind === 'conversation_summary');
 
-    expect(prepared.audit.conversationSummaryPlan.status).toBe('within_budget');
-    expect(prepared.audit.conversationSummaryPlan.selectedSummaries).toContainEqual(expect.objectContaining({
-      id: 'summary-profile',
-      kind: 'relational_profile',
-      sourceMessageIds: ['old-user']
-    }));
-    expect(summarySegment?.messages[0]?.content).toContain('[跨对话总结]');
-    expect(prepared.audit.requestReceipt.blocks.some((block) => block.intent === 'conversation_summary')).toBe(true);
+    expect(prepared.audit.conversationSummaryPlan.status).toBe('disabled');
+    expect(prepared.audit.conversationSummaryPlan.selectedSummaries).toEqual([]);
+    expect(summarySegment).toBeUndefined();
+    expect(prepared.audit.requestReceipt.blocks.some((block) => block.intent === 'conversation_summary')).toBe(false);
   });
 
-  it('passes collaborator semantic recall config into the request planner', async () => {
+  it('ignores stored semantic recall config', async () => {
     const persona = createPersonaTemplate({
       id: 'pharos',
       name: 'Pharos',
@@ -438,14 +434,11 @@ describe('prepareCollaboratorReplyRequest semantic recall', () => {
       activeConversationId: 'active'
     });
 
-    expect(prepared.audit.semanticRecallPlan.selectedCandidates).toContainEqual(expect.objectContaining({
-      id: 'recall:recent_tail:older-match:old-user-3',
-      kind: 'recent_tail',
-      sourceMessageIds: ['old-user-3']
-    }));
+    expect(prepared.audit.semanticRecallPlan.status).toBe('disabled');
+    expect(prepared.audit.semanticRecallPlan.selectedCandidates).toEqual([]);
   });
 
-  it('loads vector source conversation bodies while vector request recall is enabled', async () => {
+  it('does not load vector source conversation bodies', async () => {
     resolveRequestSemanticVectorCandidatesMock.mockResolvedValue([{
       id: 'recall:vector_match:older-vector:chunk-1',
       kind: 'vector_match',
@@ -492,12 +485,31 @@ describe('prepareCollaboratorReplyRequest semantic recall', () => {
     });
     const semanticRecall = prepared.context.segments.find((segment) => segment.kind === 'semantic_recall');
 
-    expect(loadSemanticRecallConversations).toHaveBeenCalledWith(['older-vector']);
-    expect(prepared.audit.semanticRecallPlan.selectedCandidates).toContainEqual(expect.objectContaining({
-      id: 'recall:vector_match:older-vector:chunk-1',
-      kind: 'vector_match'
-    }));
-    expect(semanticRecall?.messages[0]?.content).toContain('vector source original text');
+    expect(loadSemanticRecallConversations).not.toHaveBeenCalled();
+    expect(prepared.audit.semanticRecallPlan.selectedCandidates).toEqual([]);
+    expect(semanticRecall).toBeUndefined();
+  });
+
+  it('sends the rolling summary plus only messages after its cursor', async () => {
+    const prepared = await prepareCollaboratorReplyRequest({
+      api: textProvider,
+      persona: createPersonaTemplate({ id: 'pharos', name: 'Pharos', description: '灯塔' }),
+      messages: [
+        createUserMessage('old-user', '已经进入摘要的旧问题', 1),
+        { id: 'old-assistant', role: 'assistant', content: '已经进入摘要的旧回答', timestamp: 2 },
+        createUserMessage('fresh-user', '摘要之后的新问题', 3)
+      ],
+      rollingSummary: {
+        content: '此前已经讨论完旧问题，现在准备继续。',
+        throughMessageId: 'old-assistant',
+        updatedAt: 3
+      }
+    });
+    const historySummary = prepared.context.segments.find((segment) => segment.kind === 'history_summary');
+
+    expect(prepared.conversation.map((message) => message.id)).toEqual(['fresh-user']);
+    expect(historySummary?.messages[0]?.content).toContain('此前已经讨论完旧问题');
+    expect(historySummary?.messages[0]?.content).toContain('以原始对话为准');
   });
 });
 

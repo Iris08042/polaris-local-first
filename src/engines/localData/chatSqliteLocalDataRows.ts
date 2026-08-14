@@ -200,6 +200,7 @@ function toRecordRow(
     committedAt,
     messages,
     task: metadata.task ?? null,
+    rollingSummary: metadata.rollingSummary ?? null,
     draft: metadata.draft ?? '',
     workspaceLedger: metadata.workspaceLedger ?? [],
     ownerProjectId: metadata.activeProjectId ?? null,

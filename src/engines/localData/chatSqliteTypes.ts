@@ -26,6 +26,7 @@ export type TypedChatSqliteConversationMetadata = Pick<
   | 'activeProjectId'
   | 'workspaceLedger'
   | 'task'
+  | 'rollingSummary'
   | 'draft'
   | 'pinnedAt'
   | 'updatedAt'

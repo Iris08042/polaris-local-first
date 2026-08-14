@@ -49,6 +49,7 @@ export type ChatState = {
   insertMessageBefore: (target: WritableConversationBody, beforeMessageId: string, message: ChatMessage) => void;
   insertMessageAfter: (target: WritableConversationBody, afterMessageId: string, message: ChatMessage) => void;
   updateMessage: (target: WritableConversationBody, messageId: string, patch: Partial<ChatMessage>) => void;
+  setConversationRollingSummary: (conversationId: string, summary: Conversation['rollingSummary']) => void;
   replaceConversationMessages: (target: WritableConversationBody, messages: ChatMessage[]) => void;
   setConversationActiveProject: (conversationId: string, projectId: string | null) => void;
   reconcileConversationWorkspaceBindings: (validProjectIds: string[]) => void;

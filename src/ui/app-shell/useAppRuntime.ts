@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAndroidApkUpdateRuntime } from '../../app/android/useAndroidApkUpdateRuntime';
-import { useAutomaticConversationSummaryMemory } from '../../app/chat/useAutomaticConversationSummaryMemory';
+import { useAutomaticRollingSummary } from '../../app/chat/useAutomaticRollingSummary';
 import { useDesktopWorkspaceAutoSync } from '../../app/desktop/useDesktopWorkspaceAutoSync';
 import { usePersistentStoreLifecycle } from '../../app/bootstrap/usePersistentStoreLifecycle';
 import { useAppTriggerRuntime, type AppTriggerChatRuntimePort } from '../../app/shell/useAppTriggerRuntime';
@@ -55,7 +55,7 @@ export function useAppRuntime({
   useMcpCatalogHeartbeat({ enabled: backgroundRuntimeReady });
   useDesktopWorkspaceAutoSync();
   useAndroidApkUpdateRuntime({ enabled: backgroundRuntimeReady });
-  useAutomaticConversationSummaryMemory({ startupReady: backgroundRuntimeReady });
+  useAutomaticRollingSummary({ enabled: backgroundRuntimeReady });
   useCollectionOwnershipBackfill({
     startupReady: backgroundRuntimeReady,
     ...collectionOwnershipBackfill

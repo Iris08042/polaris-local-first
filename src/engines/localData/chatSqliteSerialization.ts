@@ -128,6 +128,7 @@ function toConversationMetadata(conversation: Conversation): TypedChatSqliteConv
     activeProjectId: conversation.activeProjectId,
     workspaceLedger: conversation.workspaceLedger,
     task: conversation.task,
+    rollingSummary: conversation.rollingSummary,
     draft: conversation.draft,
     pinnedAt: conversation.pinnedAt,
     updatedAt: conversation.updatedAt

@@ -21,6 +21,7 @@ import { promoteInlineThinkingTags } from '../inlineThinkingTags';
 import type {
   ChatMessage,
   Conversation,
+  ConversationRollingSummary,
   ConversationTaskState,
   ImageUnderstandingSettings,
   MemoryVectorRetrievalSettings,
@@ -60,6 +61,7 @@ export async function requestCollaboratorReply(params: {
   persona: Persona | null | undefined;
   personas?: Persona[];
   messages: ChatMessage[];
+  rollingSummary?: ConversationRollingSummary | null;
   semanticRecallEnabled?: boolean;
   semanticRecallConversations?: Conversation[];
   loadSemanticRecallConversations?: (conversationIds: string[]) => Promise<Conversation[]>;
@@ -83,6 +85,7 @@ export async function requestCollaboratorReply(params: {
     persona,
     personas,
     messages,
+    rollingSummary,
     semanticRecallEnabled,
     semanticRecallConversations,
     loadSemanticRecallConversations,
@@ -106,6 +109,7 @@ export async function requestCollaboratorReply(params: {
     persona,
     personas,
     messages,
+    rollingSummary,
     semanticRecallEnabled,
     semanticRecallConversations,
     loadSemanticRecallConversations,

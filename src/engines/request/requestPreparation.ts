@@ -6,7 +6,6 @@ import {
   resolveProviderImageUnderstandingSettings,
   type ImageUnderstandingRequestReply
 } from '../imageUnderstandingClient';
-import { MEMORY_RELEASE_GATES } from '../../config/memoryReleaseGates';
 import { createUid } from '../id';
 import { buildRequestContextPlan } from './requestContextPlan';
 import type { AssistantRequestAudit } from './requestAudit';
@@ -15,24 +14,12 @@ import { resolveRequestCachePlan } from './requestCachePlan';
 import { buildRequestContextReceipt } from './requestContextReceipt';
 import { resolveRequestBudgetPlan, resolveRequestBudgetUsage, resolveRequestHistoryBudget } from './requestBudget';
 import { resolveRequestMemoryPlan } from './requestMemoryPlan';
+import { resolveRequestConversationSummaryPlan } from './requestConversationSummaryPlan';
 import {
-  DEFAULT_CONVERSATION_SUMMARY_REQUEST_MAX_CHARS,
-  DEFAULT_CONVERSATION_SUMMARY_REQUEST_MAX_RECENT_TOPICS,
-  DEFAULT_CONVERSATION_SUMMARY_REQUEST_MAX_RELATIONAL_PROFILES,
-  DEFAULT_CONVERSATION_SUMMARY_REQUEST_MAX_TOTAL,
-  DEFAULT_CONVERSATION_SUMMARY_REQUEST_MAX_TOKENS,
-  resolveRequestConversationSummaryPlan
-} from './requestConversationSummaryPlan';
-import {
-  DEFAULT_SEMANTIC_RECALL_REQUEST_MAX_CANDIDATES,
   resolveRequestSemanticRecallPlan,
-  resolveSemanticRecallConfig,
   resolveSemanticRecallContextCandidates
 } from './requestSemanticRecallPlan';
-import {
-  resolveRequestSemanticVectorCandidates,
-  type RequestSemanticVectorEmbeddingClient
-} from './requestSemanticVectorRecall';
+import type { RequestSemanticVectorEmbeddingClient } from './requestSemanticVectorRecall';
 import { buildAssistantPromptParts } from './requestPromptLayers';
 import { selectPromptPartsForBudget } from './requestTruncation';
 import { buildTemplateContext } from '../templateEngine';
@@ -46,6 +33,7 @@ import {
 import type {
   ChatMessage,
   Conversation,
+  ConversationRollingSummary,
   ConversationTaskState,
   ImageUnderstandingSettings,
   MemoryVectorRetrievalSettings,
@@ -67,6 +55,7 @@ const REQUEST_IMAGE_SOFT_TARGET_BYTES = 320 * 1024;
 const REQUEST_IMAGE_EXPORT_QUALITY_STEPS = [0.82, 0.72, 0.62, 0.52, 0.42] as const;
 const REQUEST_IMAGE_HYDRATION_MAX_USER_TURNS = 2;
 const REQUEST_IMAGE_DIRECT_KEEP_MIME_TYPES = new Set(['image/jpeg', 'image/webp']);
+const MINIMUM_RAW_CONTEXT_MESSAGE_COUNT = 300;
 
 export type RequestImageUnderstandingResult = {
   messageId: string;
@@ -83,6 +72,27 @@ function parseContextLimit(input: string | undefined): number {
   }
 
   return Math.floor(limit);
+}
+
+export function resolveMessagesAfterRollingSummary(
+  messages: ChatMessage[],
+  rollingSummary?: ConversationRollingSummary | null
+) {
+  const throughMessageId = rollingSummary?.throughMessageId;
+  if (!throughMessageId) return messages;
+  const throughIndex = messages.findIndex((message) => message.id === throughMessageId);
+  return throughIndex >= 0 ? messages.slice(throughIndex + 1) : messages;
+}
+
+function formatRollingSummaryForRequest(summary?: ConversationRollingSummary | null) {
+  const content = summary?.content.trim();
+  if (!content) return [];
+  return [
+    [
+      '滚动摘要（只用于自然衔接当前聊天，不要机械复述，也不要把临时状态当成固定人格；若与后面的原始对话冲突，以原始对话为准）：',
+      content
+    ].join('\n')
+  ];
 }
 
 export function resolvePreparedAdvancedSettings(params: {
@@ -134,86 +144,6 @@ function runtimeNow() {
     return performance.now();
   }
   return Date.now();
-}
-
-function latestUserRecallQuery(messages: ChatMessage[]) {
-  return [...messages].reverse().find((message) => message.role === 'user')?.content.trim() ?? '';
-}
-
-async function resolveVectorCandidatesForRequest(params: {
-  persona: Persona | null | undefined;
-  providers?: ProviderProfile[];
-  globalApi?: ProviderProfile;
-  memoryVectorRetrieval?: MemoryVectorRetrievalSettings;
-  messages: ChatMessage[];
-  activeConversationId?: string | null;
-  catalogConversationIds: string[];
-  maxResults: number;
-  signal?: AbortSignal;
-  requestEmbeddings?: RequestSemanticVectorEmbeddingClient;
-}) {
-  try {
-    return await resolveRequestSemanticVectorCandidates({
-      persona: params.persona,
-      providers: params.providers,
-      globalApi: params.globalApi,
-      memoryVectorRetrieval: params.memoryVectorRetrieval,
-      queryText: latestUserRecallQuery(params.messages),
-      activeConversationId: params.activeConversationId,
-      catalogConversationIds: params.catalogConversationIds,
-      maxResults: params.maxResults,
-      signal: params.signal,
-      requestEmbeddings: params.requestEmbeddings
-    });
-  } catch (error) {
-    if (params.signal?.aborted) throw error;
-    console.warn('[request] Vector semantic recall skipped.', error);
-    return [];
-  }
-}
-
-function mergeSemanticRecallConversations(
-  conversations: Conversation[] | undefined,
-  loadedConversations: Conversation[]
-) {
-  if (!loadedConversations.length) return conversations;
-  const loadedById = new Map(loadedConversations.map((conversation) => [conversation.id, conversation]));
-  const merged = (conversations ?? []).map((conversation) => loadedById.get(conversation.id) ?? conversation);
-  const existingIds = new Set(merged.map((conversation) => conversation.id));
-  for (const conversation of loadedConversations) {
-    if (!existingIds.has(conversation.id)) merged.push(conversation);
-  }
-  return merged;
-}
-
-async function hydrateSemanticRecallVectorSources(params: {
-  conversations: Conversation[] | undefined;
-  vectorCandidates: Awaited<ReturnType<typeof resolveVectorCandidatesForRequest>>;
-  loadConversations?: (conversationIds: string[]) => Promise<Conversation[]>;
-  signal?: AbortSignal;
-}) {
-  if (!params.conversations?.length || !params.loadConversations || params.vectorCandidates.length === 0) {
-    return params.conversations;
-  }
-  const loadedIds = new Set(
-    params.conversations
-      .filter((conversation) => conversation.messages.length > 0)
-      .map((conversation) => conversation.id)
-  );
-  const sourceConversationIds = Array.from(new Set(params.vectorCandidates
-    .map((candidate) => candidate.sourceConversationId)
-    .filter((conversationId): conversationId is string => Boolean(conversationId?.trim()))
-    .filter((conversationId) => !loadedIds.has(conversationId))));
-  if (sourceConversationIds.length === 0) return params.conversations;
-
-  try {
-    const loadedConversations = await params.loadConversations(sourceConversationIds);
-    return mergeSemanticRecallConversations(params.conversations, loadedConversations);
-  } catch (error) {
-    if (params.signal?.aborted) throw error;
-    console.warn('[request] Semantic recall vector source bodies skipped.', error);
-    return params.conversations;
-  }
 }
 
 async function blobToDataUrl(blob: Blob): Promise<string> {
@@ -576,6 +506,7 @@ export async function prepareCollaboratorReplyRequest(params: {
   persona: Persona | null | undefined;
   personas?: Persona[];
   messages: ChatMessage[];
+  rollingSummary?: ConversationRollingSummary | null;
   semanticRecallEnabled?: boolean;
   semanticRecallConversations?: Conversation[];
   loadSemanticRecallConversations?: (conversationIds: string[]) => Promise<Conversation[]>;
@@ -596,7 +527,7 @@ export async function prepareCollaboratorReplyRequest(params: {
   conversation: RequestMessage[];
   imageUnderstandingResults: RequestImageUnderstandingResult[];
 }> {
-  const { api, persona, personas, messages, toolLedger, toolContext, currentTask, nickname } = params;
+  const { api, persona, messages, toolLedger, toolContext, currentTask, nickname } = params;
   const startedAt = runtimeNow();
   const requestId = createUid('request');
   const preparedAdvanced = resolvePreparedAdvancedSettings({
@@ -621,7 +552,10 @@ export async function prepareCollaboratorReplyRequest(params: {
         messages,
         results: []
       };
-  const requestSourceMessages = imageUnderstanding.messages;
+  const requestSourceMessages = resolveMessagesAfterRollingSummary(
+    imageUnderstanding.messages,
+    params.rollingSummary
+  );
   const assistantName = persona?.name || 'Assistant';
   const templateContext = buildTemplateContext({
     modelId,
@@ -648,7 +582,10 @@ export async function prepareCollaboratorReplyRequest(params: {
     messages: requestSourceMessages
   });
   const promptPartsMs = runtimeNow() - stepStartedAt;
-  const messageLimit = parseContextLimit(preparedAdvanced?.contextMessageLimit);
+  const messageLimit = Math.max(
+    MINIMUM_RAW_CONTEXT_MESSAGE_COUNT,
+    parseContextLimit(preparedAdvanced?.contextMessageLimit)
+  );
   const tokenBudget = resolveContextTokenBudget(providerCapabilities.budgets);
   const budgetPlan = resolveRequestBudgetPlan({
     messageLimit,
@@ -662,61 +599,27 @@ export async function prepareCollaboratorReplyRequest(params: {
   const truncationMs = runtimeNow() - stepStartedAt;
   stepStartedAt = runtimeNow();
   const memoryPlan = resolveRequestMemoryPlan({
-    memory: persona?.memory,
-    inheritedMemorySources: persona
-      ? (personas ?? [])
-          .filter((candidate) => candidate.id !== persona.id)
-          .map((candidate) => ({ id: candidate.id, memory: candidate.memory }))
-      : [],
+    memory: undefined,
+    inheritedMemorySources: [],
     maxTokens: budgetPlan.buckets.memory.maxTokens
   });
   const memoryPlanMs = runtimeNow() - stepStartedAt;
-  const semanticRecallEnabled =
-    params.semanticRecallEnabled !== false
-    && persona?.memory.crossConversationRecallEnabled !== false;
-  const semanticRecallConfig = resolveSemanticRecallConfig(persona?.memory.semanticRecall);
-  const semanticVectorCandidates = semanticRecallEnabled && MEMORY_RELEASE_GATES.enableVectorRequestRecall && params.semanticRecallConversations
-    ? await resolveVectorCandidatesForRequest({
-        persona,
-        providers: params.providers,
-        globalApi: params.globalApi,
-        memoryVectorRetrieval: params.memoryVectorRetrieval,
-        messages: requestSourceMessages,
-        activeConversationId: params.activeConversationId ?? null,
-        catalogConversationIds: params.semanticRecallConversations.map((conversation) => conversation.id),
-        maxResults: semanticRecallConfig.recentTailConversationCount,
-        signal: params.signal,
-        requestEmbeddings: params.requestVectorEmbeddings
-      })
-    : [];
+  const semanticVectorCandidates: never[] = [];
   const conversationSummaryPlan = resolveRequestConversationSummaryPlan({
-    enabled: semanticRecallEnabled && MEMORY_RELEASE_GATES.enableConversationSummaryRequestLane,
-    summaries: persona?.memory.conversationSummaries,
-    maxTokens: DEFAULT_CONVERSATION_SUMMARY_REQUEST_MAX_TOKENS,
-    maxChars: DEFAULT_CONVERSATION_SUMMARY_REQUEST_MAX_CHARS,
-    maxTotalSummaries: DEFAULT_CONVERSATION_SUMMARY_REQUEST_MAX_TOTAL,
-    maxRelationalProfiles: DEFAULT_CONVERSATION_SUMMARY_REQUEST_MAX_RELATIONAL_PROFILES,
-    maxRecentTopics: DEFAULT_CONVERSATION_SUMMARY_REQUEST_MAX_RECENT_TOPICS
+    enabled: false,
+    summaries: undefined,
+    maxTokens: null
   });
-  const semanticRecallConversations = await hydrateSemanticRecallVectorSources({
-    conversations: params.semanticRecallConversations,
-    vectorCandidates: semanticVectorCandidates,
-    loadConversations: params.loadSemanticRecallConversations,
-    signal: params.signal
+  const semanticRecallConversations: Conversation[] = [];
+  const semanticRecallPlan = resolveRequestSemanticRecallPlan({
+    enabled: false,
+    messages: requestSourceMessages,
+    conversations: semanticRecallConversations,
+    activeConversationId: params.activeConversationId ?? null,
+    currentCollaboratorId: persona?.id ?? null,
+    maxTokens: null,
+    vectorCandidates: semanticVectorCandidates
   });
-  const semanticRecallPlan = resolveRequestSemanticRecallPlan(semanticRecallConversations
-    ? {
-        enabled: semanticRecallEnabled,
-        messages: requestSourceMessages,
-        conversations: semanticRecallConversations,
-        activeConversationId: params.activeConversationId ?? null,
-        currentCollaboratorId: persona?.id ?? null,
-        maxTokens: null,
-        maxCandidates: DEFAULT_SEMANTIC_RECALL_REQUEST_MAX_CANDIDATES,
-        config: semanticRecallConfig,
-        vectorCandidates: semanticVectorCandidates
-      }
-    : undefined);
   const semanticRecallCandidates = resolveSemanticRecallContextCandidates({
     plan: semanticRecallPlan,
     conversations: semanticRecallConversations
@@ -742,7 +645,6 @@ export async function prepareCollaboratorReplyRequest(params: {
   stepStartedAt = runtimeNow();
   const { toolRequest, tooling } = buildRequestTooling(toolContext, providerCapabilities);
   const toolRequestMs = runtimeNow() - stepStartedAt;
-  const canReadMemoryDocs = Boolean(toolRequest.tools?.some((tool) => tool.function.name === 'readMemoryDoc'));
   const canReadWorkspaceReferenceDocs = Boolean(toolRequest.tools?.some((tool) =>
     tool.function.name === 'readWorkspaceReference'
     || tool.function.name === 'searchWorkspaceReferences'
@@ -776,13 +678,13 @@ export async function prepareCollaboratorReplyRequest(params: {
     memoryLines: memoryPlan.selectedLines,
     conversationSummaries: conversationSummaryPlan.selectedSummaries,
     semanticRecallCandidates,
-    memoryReferenceDocs: canReadMemoryDocs ? persona?.memory.referenceDocs ?? [] : [],
+    memoryReferenceDocs: [],
     workspaceReferenceDocs: canReadWorkspaceReferenceDocs
       ? toolContext?.visibleWorkspaceReferenceDocs?.filter((doc) =>
           !toolContext.activeProject?.id || doc.projectId === toolContext.activeProject.id
         ) ?? []
       : [],
-    historySummaries: contextPlan.summaries.map((summary) => summary.content),
+    historySummaries: formatRollingSummaryForRequest(params.rollingSummary),
     allowImages: supportsImageInput,
     toolContext,
     tools: toolRequest.tools,

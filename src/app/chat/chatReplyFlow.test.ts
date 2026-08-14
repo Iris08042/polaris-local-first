@@ -291,7 +291,7 @@ describe('createChatReplyRunner', () => {
     }));
   });
 
-  it('uses the current chat catalog for recall without rereading persisted catalog rows', async () => {
+  it('keeps the live chat catalog but does not read old bodies for disabled native recall', async () => {
     const latestConversations = [
       {
         id: 'conversation-1',
@@ -489,7 +489,7 @@ describe('createChatReplyRunner', () => {
       messages: []
     });
 
-    expect(readConversationMessagesMock).toHaveBeenCalledWith('conversation-old');
+    expect(readConversationMessagesMock).not.toHaveBeenCalledWith('conversation-old');
     expect(readConversationMessagesMock).not.toHaveBeenCalledWith('conversation-group');
     const requestReplyCalls = requestReplyMock.mock.calls as unknown as Array<[{
       requestSnapshot: {
@@ -502,23 +502,13 @@ describe('createChatReplyRunner', () => {
       'conversation-1',
       'conversation-old'
     ]);
-    expect(requestSnapshot.semanticRecallConversations.map((conversation: { id: string }) => conversation.id)).not.toContain(
-      'conversation-group'
-    );
+    expect(requestSnapshot.semanticRecallConversations).toEqual([]);
     expect(requestReplyMock).toHaveBeenCalledWith(expect.objectContaining({
       requestSnapshot: expect.objectContaining({
         conversations: latestConversations.filter(
           (conversation: { id: string }) => conversation.id !== 'conversation-group'
         ),
-        semanticRecallConversations: expect.arrayContaining([
-          expect.objectContaining({
-            id: 'conversation-old',
-            messages: [expect.objectContaining({
-              id: 'old-user-1',
-              content: '以前聊过跨对话记忆的地基'
-            })]
-          })
-        ])
+        semanticRecallConversations: []
       })
     }));
   });

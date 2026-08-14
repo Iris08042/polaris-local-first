@@ -58,6 +58,7 @@ function toConversation(
     toolLedger: rebuildConversationToolLedger(messages),
     workspaceLedger: record.workspaceLedger,
     task: record.task,
+    rollingSummary: record.rollingSummary ?? null,
     draft: record.draft,
     pinnedAt: catalog.pinnedAt,
     updatedAt: catalog.updatedAt

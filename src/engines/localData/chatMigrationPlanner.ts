@@ -1,4 +1,4 @@
-import type { ChatMessage, Conversation, ConversationTaskState, WorkspaceLedgerEvent } from '../../types/domain';
+import type { ChatMessage, Conversation, ConversationRollingSummary, ConversationTaskState, WorkspaceLedgerEvent } from '../../types/domain';
 import {
   LocalDataProjectionContractError,
   type ChatConversationLocalDataArgs
@@ -10,6 +10,7 @@ export type ChatMigrationLegacyConversationSnapshot = {
   title: string;
   collaboratorId: string | null;
   activeProjectId?: string | null;
+  rollingSummary?: ConversationRollingSummary | null;
   task?: ConversationTaskState | null;
   draft?: string;
   workspaceLedger?: WorkspaceLedgerEvent[];
@@ -112,6 +113,7 @@ function toConversation(source: ChatMigrationLegacyConversationSnapshot, message
     title: source.title,
     collaboratorId: source.collaboratorId,
     activeProjectId: source.activeProjectId ?? null,
+    rollingSummary: source.rollingSummary ?? null,
     messages,
     workspaceLedger: source.workspaceLedger ?? [],
     task: source.task ?? null,

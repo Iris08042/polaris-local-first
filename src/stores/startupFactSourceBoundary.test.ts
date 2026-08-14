@@ -15,7 +15,7 @@ function sourceFilesUnder(relativePath: string): string[] {
     const fullPath = path.join(current, entry);
     if (statSync(fullPath).isDirectory()) return walk(fullPath);
     if (!/\.(ts|tsx)$/.test(entry) || entry.endsWith('.test.ts') || entry.endsWith('.test.tsx')) return [];
-    return [path.relative(repoRoot, fullPath)];
+    return [path.relative(repoRoot, fullPath).replace(/\\/g, '/')];
   });
   return walk(root).sort();
 }
@@ -565,7 +565,7 @@ describe('startup fact source boundary', () => {
       'useMcpCatalogHeartbeat',
       'useDesktopWorkspaceAutoSync',
       'useAndroidApkUpdateRuntime',
-      'useAutomaticConversationSummaryMemory',
+      'useAutomaticRollingSummary',
       'useAppTriggerRuntime'
     ]) {
       expect(appShell, hookName).not.toContain(hookName);
@@ -575,7 +575,7 @@ describe('startup fact source boundary', () => {
 
   it('gates background app runtime work behind the startup lifecycle readiness', () => {
     const appRuntime = source('src/ui/app-shell/useAppRuntime.ts');
-    const automaticSummary = source('src/app/chat/useAutomaticConversationSummaryMemory.ts');
+    const automaticSummary = source('src/app/chat/useAutomaticRollingSummary.ts');
 
     expect(appRuntime).toContain('const backgroundRuntimeReady = (');
     expect(appRuntime).toContain('persistentStoreLifecycle.startupThemeReady');
@@ -585,7 +585,7 @@ describe('startup fact source boundary', () => {
       'useCompanionRuntime({ enabled: backgroundRuntimeReady })',
       'useMcpCatalogHeartbeat({ enabled: backgroundRuntimeReady })',
       'useAndroidApkUpdateRuntime({ enabled: backgroundRuntimeReady })',
-      'useAutomaticConversationSummaryMemory({ startupReady: backgroundRuntimeReady })',
+      'useAutomaticRollingSummary({ enabled: backgroundRuntimeReady })',
       'useCollectionOwnershipBackfill({',
       'startupReady: backgroundRuntimeReady',
       'useAppTriggerRuntime({ chatRuntime, startupReady: backgroundRuntimeReady })'
@@ -593,8 +593,8 @@ describe('startup fact source boundary', () => {
       expect(appRuntime).toContain(call);
     }
 
-    expect(automaticSummary).toContain('startupReady: boolean');
-    expect(automaticSummary).toContain('state.startupReady');
+    expect(automaticSummary).toContain('enabled: boolean');
+    expect(automaticSummary).toContain('if (!enabled) return');
     expect(source('src/ui/app-shell/useCollectionOwnershipBackfill.ts')).toContain('if (!startupReady');
   });
 

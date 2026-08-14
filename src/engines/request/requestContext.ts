@@ -263,7 +263,7 @@ export function assembleAssistantContext(params: AssembleAssistantContextParams)
             role: 'system' as const,
             content: [
               '[历史摘要，不是原文]',
-              '以下内容是 Polaris 因上下文窗口或历史预算退化而压缩的旧历史，只能作为背景线索使用，不要当成用户或助手的逐字原话。',
+              '以下内容是当前聊天的滚动摘要，只用来保持自然衔接；不要当成用户或助手的逐字原话。',
               ...historySummaryLines
             ].join('\n'),
             cachePrefixEligible: true

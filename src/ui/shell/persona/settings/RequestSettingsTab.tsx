@@ -10,7 +10,6 @@ import type { McpServerConfig } from '../../../../types/domain';
 import { Icon, type IconName } from '../../../Icon';
 import { type PersonaTabProps } from '../personaUiShared';
 import { CustomRequestSettingsTab } from './CustomRequestSettingsTab';
-import { EngineSettingsTab } from './EngineSettingsTab';
 import { PersonaMcpSettingsPage } from './PersonaMcpSettingsPage';
 
 type RequestSettingsTabProps = PersonaTabProps & {
@@ -21,7 +20,7 @@ type RequestSettingsTabProps = PersonaTabProps & {
   onUpdateMcpServer: (serverId: string, patch: Partial<McpServerConfig>) => void;
 };
 
-type RequestSettingsPage = 'route' | 'engine' | 'custom' | 'mcp';
+type RequestSettingsPage = 'route' | 'custom' | 'mcp';
 
 const REQUEST_PAGE_META: Array<{
   id: RequestSettingsPage;
@@ -29,7 +28,6 @@ const REQUEST_PAGE_META: Array<{
   icon: IconName;
 }> = [
   { id: 'route', labelKey: 'request.settings.providerSection', icon: 'providerRoute' },
-  { id: 'engine', labelKey: 'request.settings.engineSection', icon: 'orbit' },
   { id: 'custom', labelKey: 'request.settings.customSection', icon: 'code' },
   { id: 'mcp', labelKey: 'request.settings.mcpSection', icon: 'mcpServer' }
 ];
@@ -151,11 +149,6 @@ export function RequestSettingsTab(props: RequestSettingsTabProps) {
       {activePage === 'route' ? (
         <RequestSection title={t('request.settings.providerSection')}>
           <ProviderBindingSettings {...props} />
-        </RequestSection>
-      ) : null}
-      {activePage === 'engine' ? (
-        <RequestSection title={t('request.settings.engineSection')}>
-          <EngineSettingsTab {...props} />
         </RequestSection>
       ) : null}
       {activePage === 'custom' ? (

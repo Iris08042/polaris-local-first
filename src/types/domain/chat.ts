@@ -39,7 +39,14 @@ export interface ChatMessage {
   nativeToolCalls?: ChatNativeToolCall[];
   toolInvocation?: ToolInvocation;
   cardReference?: ChatCardReference;
+  activityReceipts?: string[];
 }
+
+export type ConversationRollingSummary = {
+  content: string;
+  throughMessageId: string;
+  updatedAt: number;
+};
 
 export type ChatTokenUsage = {
   totalTokens?: number;
@@ -151,6 +158,7 @@ export interface Conversation {
   toolLedger?: ToolLedgerEntry[];
   workspaceLedger?: WorkspaceLedgerEvent[];
   task?: ConversationTaskState | null;
+  rollingSummary?: ConversationRollingSummary | null;
   draft?: string;
   pinnedAt: number | null;
   updatedAt: number;

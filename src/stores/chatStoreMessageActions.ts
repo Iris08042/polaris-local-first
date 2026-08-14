@@ -21,6 +21,7 @@ type ChatMessageActions = Pick<
   | 'insertMessageBefore'
   | 'insertMessageAfter'
   | 'updateMessage'
+  | 'setConversationRollingSummary'
   | 'replaceConversationMessages'
 >;
 
@@ -84,6 +85,16 @@ export function createChatMessageActions(
           ...markConversationDirty(state, conversationId)
         };
       });
+    },
+
+    setConversationRollingSummary: (conversationId, summary) => {
+      set((state) => ({
+        conversations: state.conversations.map((conversation) => conversation.id === conversationId
+          ? { ...conversation, rollingSummary: summary, updatedAt: Date.now() }
+          : conversation),
+        ...markConversationDirty(state, conversationId)
+      }));
+      flushChatPersistenceIfHydrated(get, 'rolling-summary-flush');
     },
 
     replaceConversationMessages: (target, messages) => {
