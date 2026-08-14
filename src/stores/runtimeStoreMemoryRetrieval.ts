@@ -17,7 +17,7 @@ export function normalizeMemoryVectorRetrievalSettings(
   const rawDimensions = value?.dimensions;
 
   return {
-    enabled: value?.enabled === true,
+    enabled: false,
     baseUrl: value?.baseUrl?.trim() ?? '',
     path: value?.path?.trim() || '/embeddings',
     apiKey: value?.apiKey?.trim() ?? '',
@@ -31,15 +31,4 @@ export function normalizeMemoryVectorRetrievalSettings(
         ? Math.floor(rawLastUpdatedAt)
         : 0
   };
-}
-
-export function mergeMemoryVectorRetrievalSettings(
-  current: MemoryVectorRetrievalSettings,
-  patch: Partial<MemoryVectorRetrievalSettings>
-): MemoryVectorRetrievalSettings {
-  return normalizeMemoryVectorRetrievalSettings({
-    ...current,
-    ...patch,
-    lastUpdatedAt: Date.now()
-  });
 }

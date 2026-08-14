@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   resolveRollingSummarySource,
+  ROLLING_SUMMARY_RAW_CONTEXT_MESSAGE_COUNT,
   ROLLING_SUMMARY_TRIGGER_MESSAGE_COUNT,
   updateRollingSummaryForConversation
 } from '../../app/chat/rollingSummary';
@@ -57,7 +58,7 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
       <article className="es-rolling-intro">
         <strong>最近这段聊天的连续脉络</strong>
         <small>Current conversation continuity</small>
-        <p>每累积 {ROLLING_SUMMARY_TRIGGER_MESSAGE_COUNT} 条已经固定的真实消息自动更新；最后一轮始终保留原文，不会过早写进摘要。</p>
+        <p>最近 {ROLLING_SUMMARY_RAW_CONTEXT_MESSAGE_COUNT} 条真实消息始终保留原文；更早的内容每累积 {ROLLING_SUMMARY_TRIGGER_MESSAGE_COUNT} 条自动融入摘要。</p>
       </article>
 
       <article className="es-rolling-sheet">
@@ -66,7 +67,7 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
           <time>{formatUpdatedAt(conversation?.rollingSummary?.updatedAt)}</time>
         </header>
         <div className={conversation?.rollingSummary?.content ? 'has-summary' : 'is-empty'}>
-          {conversation?.rollingSummary?.content || '还没有滚动摘要。聊到 50 条后会自动生成，也可以现在手动同步一次。'}
+          {conversation?.rollingSummary?.content || `还没有需要压缩的旧对话。最近 ${ROLLING_SUMMARY_RAW_CONTEXT_MESSAGE_COUNT} 条会一直保留原文。`}
         </div>
       </article>
 

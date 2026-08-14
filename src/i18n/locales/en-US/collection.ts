@@ -45,8 +45,6 @@ export const collection = {
   'collection.scope.edit': 'Edit',
   'collection.scope.settings': 'Settings',
   'collection.scope.createCollaborator': 'New collaborator',
-  'collection.scope.groupChat': 'Group chat',
-  'collection.scope.groupDetail': 'Shared collaborator space',
   'collection.scope.allCollaborators': 'All collaborators',
   'collection.scope.allRooms': 'All rooms',
   'collection.scope.segmentCount': '{count} chats',

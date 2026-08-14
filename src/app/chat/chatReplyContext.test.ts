@@ -349,6 +349,27 @@ describe('buildReplyToolContext', () => {
     vi.unstubAllGlobals();
   });
 
+  it('hard-disables every retired Polaris memory tool group in live replies', () => {
+    const snapshot = createSnapshot([], null);
+    snapshot.enabledToolGroups = {
+      memory: true,
+      memoryRecall: true,
+      memoryWrite: true
+    };
+    const result = buildReplyToolContext({
+      snapshot,
+      collaboratorId: 'persona-1',
+      messages: [{ id: 'u1', role: 'user', content: '你好', timestamp: 1, origin: 'user-input' }]
+    });
+
+    expect(result.toolContext.enabledToolGroups).toEqual(expect.objectContaining({
+      memory: false,
+      memoryRecall: false,
+      memoryWrite: false
+    }));
+    expect(result.toolContext.memorySearchAvailable).toBe(false);
+  });
+
   it('prefers the current turn continue-card over a stale active card and forces a real room action', () => {
     const cards: CodeCard[] = [
       {

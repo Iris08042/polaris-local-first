@@ -18,7 +18,7 @@ import { useMenuGenerationSettingsController } from './useMenuGenerationSettings
 import { useMenuToolboxController } from './useMenuToolboxController';
 import { createMenuStorageMaintenanceActions } from './menuStorageMaintenanceActions';
 
-export type MenuPage = 'root' | 'backup' | 'gateway' | 'memory' | 'generation' | 'voice' | 'toolbox' | 'mcp' | 'desktopLocal' | 'automation' | 'usage' | 'display' | 'fonts' | 'language' | 'storage' | 'docs' | 'privacy' | 'system';
+export type MenuPage = 'root' | 'backup' | 'gateway' | 'generation' | 'voice' | 'toolbox' | 'mcp' | 'desktopLocal' | 'automation' | 'usage' | 'display' | 'fonts' | 'language' | 'storage' | 'docs' | 'privacy' | 'system';
 const REQUEST_DEBUG_EVENT = 'polaris:request-debug-updated';
 
 export function shouldSyncMenuRequestEntries(open: boolean, page: MenuPage) {
@@ -64,8 +64,6 @@ export function useMenuSheetController({
   const api = useRuntimeStore(selectRuntimeApi);
   const providers = useRuntimeStore((state) => state.providers);
   const search = useRuntimeStore((state) => state.search);
-  const conversationSummaryModel = useRuntimeStore((state) => state.conversationSummaryModel);
-  const memoryVectorRetrieval = useRuntimeStore((state) => state.memoryVectorRetrieval);
   const imageGeneration = useRuntimeStore((state) => state.imageGeneration);
   const voiceGeneration = useRuntimeStore((state) => state.voiceGeneration);
   const toolPromptPreferences = useRuntimeStore((state) => state.toolPromptPreferences);
@@ -81,8 +79,6 @@ export function useMenuSheetController({
   const activeCollaboratorId = usePersonaStore((state) => state.activeCollaboratorId);
   const createProvider = useRuntimeStore((state) => state.createProvider);
   const setSearchConfig = useRuntimeStore((state) => state.setSearchConfig);
-  const setConversationSummaryModel = useRuntimeStore((state) => state.setConversationSummaryModel);
-  const setMemoryVectorRetrieval = useRuntimeStore((state) => state.setMemoryVectorRetrieval);
   const setImageGeneration = useRuntimeStore((state) => state.setImageGeneration);
   const setVoiceGeneration = useRuntimeStore((state) => state.setVoiceGeneration);
   const setToolPromptGroupEnabled = useRuntimeStore((state) => state.setToolPromptGroupEnabled);
@@ -218,14 +214,8 @@ export function useMenuSheetController({
     copy
   });
   const generationSettings = useMenuGenerationSettingsController({
-    personas,
-    activeCollaboratorId,
-    conversationSummaryModel,
-    memoryVectorRetrieval,
     imageGeneration,
     voiceGeneration,
-    setConversationSummaryModel,
-    setMemoryVectorRetrieval,
     setImageGeneration,
     setVoiceGeneration
   });
@@ -249,9 +239,6 @@ export function useMenuSheetController({
     api,
     providers,
     search,
-    conversationSummaryModel: generationSettings.conversationSummaryModel,
-    memoryVectorRetrieval: generationSettings.memoryVectorRetrieval,
-    memorySearchAvailable: generationSettings.memorySearchAvailable,
     personalDataStatus: toolbox.personalDataStatus,
     imageGeneration: generationSettings.imageGeneration,
     voiceGeneration: generationSettings.voiceGeneration,
@@ -298,8 +285,6 @@ export function useMenuSheetController({
     onOpenApiFromRoot: gateway.onOpenApiFromRoot,
     onOpenApiFromGateway: gateway.onOpenApiFromGateway,
     onSetSearchConfig: setSearchConfig,
-    onSetConversationSummaryModel: generationSettings.onSetConversationSummaryModel,
-    onSetMemoryVectorRetrieval: generationSettings.onSetMemoryVectorRetrieval,
     onSetImageGeneration: generationSettings.onSetImageGeneration,
     onSetVoiceGeneration: generationSettings.onSetVoiceGeneration,
     onSetToolPromptGroupEnabled: toolbox.onSetToolPromptGroupEnabled,

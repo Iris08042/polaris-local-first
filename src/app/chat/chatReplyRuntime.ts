@@ -32,7 +32,6 @@ import {
 import type { ChatReplyStoreBindings, ChatUiReplyState } from './chatPorts';
 import { parseAssistantReplyContent } from './chatReplyContent';
 import { buildReplyToolContext, type ChatReplyRequestSnapshot } from './chatReplyContext';
-import { buildChatMemoryEvidenceFromAudit } from './chatMemoryEvidence';
 import { createStreamingSession } from './chatStreamingSession';
 import { buildStoredToolCallRecords } from './chatToolCallRecords';
 import { recordModelFlowTrace } from './modelFlowTraceRecorder';
@@ -46,6 +45,7 @@ import {
   commitRecoveredToolEvidenceStage,
   type TaskActivationEnforcement
 } from './chatToolEvidenceStage';
+import { resolveOmbreBreathRequired } from '../../engines/tool-protocol/ombreMemoryContract';
 import {
   buildLengthFollowupSystemMessage,
   buildToolPreparationRetrySystemMessage,
@@ -326,7 +326,8 @@ async function requestReplyRound({
   const toolContextWithMcp = {
     ...effectiveToolContextWithDesktop,
     mcpTools: mcpToolCatalog.tools,
-    mcpCatalogErrors: mcpToolCatalog.errors
+    mcpCatalogErrors: mcpToolCatalog.errors,
+    ombreBreathRequired: resolveOmbreBreathRequired(messages, mcpToolCatalog.tools)
   };
   const availableToolNames = resolveAvailablePolarisToolNames(toolContextWithMcp);
   const ignoredUnknownNativeToolNames = Array.from(availableToolNames);
@@ -504,8 +505,7 @@ async function requestReplyRound({
       providerName: activeRequestSnapshot.api.name,
       visibleContent,
       reply,
-      nativeToolCalls: storedToolCalls,
-      memoryEvidence: buildChatMemoryEvidenceFromAudit(requestAudit)
+      nativeToolCalls: storedToolCalls
     }));
     recordChatSendPerformanceMark(conversationId, '聊天发送 · 最终消息已提交', {
       extra: [

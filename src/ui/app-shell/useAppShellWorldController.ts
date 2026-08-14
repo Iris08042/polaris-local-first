@@ -65,8 +65,7 @@ export function useAppShellWorldController({
   const previousWorldSwitchingRef = useRef(false);
   const isWorldSwitching = [
     worldPresence.renderChat,
-    worldPresence.renderCollection,
-    worldPresence.renderGroup
+    worldPresence.renderCollection
   ].filter(Boolean).length > 1;
 
   useEffect(() => {
@@ -120,22 +119,11 @@ export function useAppShellWorldController({
     openProviderSettings,
     ui: chatUi
   });
-  const groupWorldProps = {
-    shell: {
-      isActiveWorld: activeWorld === 'group',
-      isWorldSwitching,
-      // 退出群聊回到"选人"的动作里：打开切换房间抽屉，而不是落进某个协作者房间
-      onExitToRoomSwitch: () => collection.setCollaboratorSwitchOpen(true)
-    },
-    ui: chatUi
-  };
-
   return {
     themeTransitionPhase,
     worldPresence,
     shellWorld,
     topbarProps,
-    chatWorldProps,
-    groupWorldProps
+    chatWorldProps
   };
 }

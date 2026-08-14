@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createChatToolActions } from './chatToolActions';
+import { buildOmbreActivityReceipts, createChatToolActions } from './chatToolActions';
+import type { ToolActionRunOutcome } from './chatToolOutcome';
 
 function createToolActionsHarness() {
   const setCommandStatus = vi.fn();
@@ -140,5 +141,50 @@ describe('createChatToolActions command shortcuts', () => {
 
     expect(consumed).toBe(true);
     expect(harness.setCommandStatus).toHaveBeenCalledWith(expect.stringContaining('输入 /'), true);
+  });
+});
+
+describe('Ombre activity receipts', () => {
+  const action = {
+    kind: 'invokeMcpTool',
+    serverId: 'ob',
+    serverName: 'Ombre Brain',
+    schemaName: 'ombre_hold',
+    toolName: 'hold',
+    argumentsObject: {}
+  } as const;
+
+  function directOutcome(status: 'executed' | 'failed', isError?: boolean): ToolActionRunOutcome {
+    return {
+      path: 'direct',
+      status,
+      action,
+      toolInvocation: {
+        id: 'tool-1',
+        kind: 'invokeMcpTool',
+        status,
+        title: 'hold',
+        summary: 'hold',
+        ...(status === 'executed' ? {
+          mcpResult: {
+            serverId: 'ob',
+            serverName: 'Ombre Brain',
+            schemaName: 'ombre_hold',
+            toolName: 'hold',
+            argumentsObject: {},
+            isError
+          }
+        } : {})
+      }
+    };
+  }
+
+  it('reports success only after a non-error MCP result exists', () => {
+    expect(buildOmbreActivityReceipts([directOutcome('executed', false)]))
+      .toEqual(['OB 操作已完成 · hold']);
+    expect(buildOmbreActivityReceipts([directOutcome('executed', true)]))
+      .toEqual(['OB 操作失败 · hold']);
+    expect(buildOmbreActivityReceipts([directOutcome('failed')]))
+      .toEqual(['OB 操作失败 · hold']);
   });
 });

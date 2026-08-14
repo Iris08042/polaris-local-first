@@ -64,16 +64,4 @@ describe('deriveAppShellState', () => {
     expect(state.activeChatDensity).toBe('dense');
   });
 
-  it('keeps group world as its own shell state', () => {
-    const state = deriveAppShellState({
-      ...baseArgs,
-      activeWorld: 'group',
-      frontstageCollaboratorId: 'aa'
-    });
-
-    expect(state.topbarTitle).toBe('Polaris');
-    expect(state.worldLabel).toBe('群聊');
-    expect(state.showTopbarShell).toBe(false);
-    expect(state.showTopbarTitle).toBe(true);
-  });
 });

@@ -16,6 +16,8 @@ import {
 } from './chatSendPerformanceTrace';
 import { selectChatConversations } from './liveConversationCatalog';
 import { reportPersistenceError } from '../../infrastructure/persistenceDiagnostics';
+import type { ChatReplyRunResult } from './chatReplyRuntime';
+import { runUserTurnMaintenance } from './userTurnMaintenance';
 
 type CreateChatActionHandlersArgs = {
   startupReady: boolean;
@@ -26,7 +28,7 @@ type CreateChatActionHandlersArgs = {
     conversationId: string;
     collaboratorId: string;
     messages: ChatMessage[];
-  }) => Promise<unknown>;
+  }) => Promise<ChatReplyRunResult | void>;
   submitToolCommand: (rawInput: string) => Promise<boolean>;
   activeSubmitFingerprintRef: MutableRefObject<string | null>;
 };
@@ -128,7 +130,8 @@ export function createChatActionHandlers({
         setCommandStatus: ui.setCommandStatus,
         submitToolCommand,
         onUserMessageSubmitted: ui.triggerSubmitFlight,
-        requestReply: ({ conversationId, collaboratorId, messages }) => runReply({ conversationId, collaboratorId, messages })
+        requestReply: ({ conversationId, collaboratorId, messages }) => runReply({ conversationId, collaboratorId, messages }),
+        onUserTurnSettled: ({ conversationId, replyResult }) => runUserTurnMaintenance(conversationId, replyResult)
       });
     } finally {
       if (activeSubmitFingerprintRef.current === submitFingerprint) {

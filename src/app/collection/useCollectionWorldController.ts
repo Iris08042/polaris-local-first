@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { filterCodeCardsForCollaboratorScope, resolveOwnerCollaboratorId } from '../../engines/collectionOwnership';
 import { createCompanionPersonaProjection, isCompanionCollaboratorId } from '../../engines/companion';
-import { enterChatWorld, enterGroupWorld } from '../shell/frontstageNavigation';
+import { enterChatWorld } from '../shell/frontstageNavigation';
 import {
   copyAutomationTriggerUrl,
   createAutomationRuleForCollaborator,
@@ -350,9 +350,6 @@ export function useCollectionWorldController(ui: CollectionWorldUiPorts) {
         setExportingConversationArchive(false);
       }
     },
-    onOpenGroupWorld: () => {
-      enterGroupWorld(frontstage);
-    },
     onCreateConversation: () => {
       const conversationId = createConversation(collaboratorScopeId ?? undefined, {
         activeProjectId: frontstage.collectionProjectId
@@ -421,7 +418,6 @@ export function useCollectionWorldController(ui: CollectionWorldUiPorts) {
     onSelectCollaboratorScope: (collaboratorId: string | null) => {
       if (collaboratorId && !isCompanionCollaboratorId(collaboratorId) && !hasPersistedCollaborator(collaboratorId)) return;
       enterCollaboratorCollectionScope({
-        activeWorld: frontstage.activeWorld,
         setFrontstageCollaboratorId: frontstage.setFrontstageCollaboratorId,
         setCollectionShelf: frontstage.setCollectionShelf,
         setWorld: frontstage.setWorld

@@ -2,6 +2,74 @@ import { describe, expect, it } from 'vitest';
 import { buildRequestContextPlan } from './requestContextPlan';
 
 describe('requestContextPlan', () => {
+  it('keeps 200 real conversation messages without letting tool traffic consume the limit', () => {
+    const messages = Array.from({ length: 205 }, (_, index) => ([
+      {
+        id: `tool-${index}`,
+        role: 'system' as const,
+        content: `工具过程 ${index}`,
+        timestamp: index * 2,
+        toolInvocation: {
+          id: `tool-${index}`,
+          kind: 'runCode' as const,
+          status: 'executed' as const,
+          title: '工具过程',
+          summary: '完成'
+        }
+      },
+      {
+        id: `real-${index}`,
+        role: index % 2 === 0 ? 'user' as const : 'assistant' as const,
+        content: `真实对话 ${index}`,
+        timestamp: index * 2 + 1
+      }
+    ])).flat();
+
+    const { conversation, contextPlan } = buildRequestContextPlan({
+      historyMaxTokens: 100_000,
+      messageLimit: 200,
+      messages
+    });
+    const realIds = conversation
+      .filter((message) => message.role === 'user' || message.role === 'assistant')
+      .map((message) => message.id);
+
+    expect(realIds).toHaveLength(200);
+    expect(realIds[0]).toBe('real-5');
+    expect(realIds[realIds.length - 1]).toBe('real-204');
+    expect(contextPlan.entries.find((entry) => entry.messageId === 'real-4')?.status).toBe('dropped_message_limit');
+  });
+
+  it('counts attachment-only messages but not system notes against the real-message limit', () => {
+    const { conversation, contextPlan } = buildRequestContextPlan({
+      historyMaxTokens: 8_000,
+      messageLimit: 2,
+      messages: [
+        { id: 'old', role: 'user', content: 'old', timestamp: 1, origin: 'user-input' },
+        {
+          id: 'attachment',
+          role: 'user',
+          content: '',
+          timestamp: 2,
+          origin: 'user-input',
+          attachments: [{
+            id: 'a1',
+            assetId: 'asset-1',
+            kind: 'image',
+            name: 'photo.jpg',
+            mimeType: 'image/jpeg',
+            size: 128
+          }]
+        },
+        { id: 'note', role: 'assistant', content: 'local note', timestamp: 3, origin: 'system-note' },
+        { id: 'latest', role: 'assistant', content: 'seen', timestamp: 4, origin: 'assistant-reply' }
+      ]
+    });
+
+    expect(conversation.map((message) => message.id)).toEqual(['attachment', 'note', 'latest']);
+    expect(contextPlan.entries.find((entry) => entry.messageId === 'old')?.status).toBe('dropped_message_limit');
+  });
+
   it('drops recent orphaned informational tool messages outside request conversation', () => {
     const { conversation, contextPlan } = buildRequestContextPlan({
       historyMaxTokens: 8_000,
@@ -404,7 +472,7 @@ describe('requestContextPlan', () => {
     expect(historyDecision.status).toBe('trimmed_budget');
   });
 
-  it('keeps the latest user turn without summarizing messages explicitly dropped by messageLimit', () => {
+  it('does not let tool follow-up messages consume the real-message limit', () => {
     const { conversation, contextPlan } = buildRequestContextPlan({
       historyMaxTokens: 8_000,
       messageLimit: 1,
@@ -430,14 +498,14 @@ describe('requestContextPlan', () => {
       ]
     });
 
-    expect(conversation.map((message) => message.id)).toEqual(['user-1']);
+    expect(conversation.map((message) => message.id)).toEqual(['user-1', 'tool-followup-1', 'tool-followup-2']);
     expect(contextPlan.entries.find((entry) => entry.messageId === 'user-1')?.status).toBe('kept');
-    expect(contextPlan.entries.find((entry) => entry.messageId === 'tool-followup-1')?.status).toBe('dropped_message_limit');
-    expect(contextPlan.entries.find((entry) => entry.messageId === 'tool-followup-2')?.status).toBe('dropped_message_limit');
+    expect(contextPlan.entries.find((entry) => entry.messageId === 'tool-followup-1')?.status).toBe('kept');
+    expect(contextPlan.entries.find((entry) => entry.messageId === 'tool-followup-2')?.status).toBe('kept');
     expect(contextPlan.summaries).toEqual([]);
   });
 
-  it('does not keep a tool result when messageLimit cuts away its origin assistant', () => {
+  it('keeps an intact tool pair without charging it against the real-message limit', () => {
     const { conversation, contextPlan } = buildRequestContextPlan({
       historyMaxTokens: 8_000,
       messageLimit: 2,
@@ -477,11 +545,16 @@ describe('requestContextPlan', () => {
       ]
     });
 
-    expect(conversation.map((message) => message.id)).toEqual(['user-1']);
-    expect(contextPlan.entries.find((entry) => entry.messageId === 'assistant-1')?.status).toBe('dropped_message_limit');
-    expect(contextPlan.entries.find((entry) => entry.messageId === 'tool-1')?.status).toBe('dropped_message_limit');
+    expect(conversation.map((message) => message.id)).toEqual(['assistant-1', 'tool-1', 'user-1']);
+    expect(contextPlan.entries.find((entry) => entry.messageId === 'assistant-1')?.status).toBe('kept');
+    expect(contextPlan.entries.find((entry) => entry.messageId === 'tool-1')?.status).toBe('kept');
     expect(contextPlan.entries.find((entry) => entry.messageId === 'user-1')?.status).toBe('kept');
     expect(contextPlan.units).toEqual([
+      expect.objectContaining({
+        kind: 'tool_pair',
+        messageIds: ['assistant-1', 'tool-1'],
+        status: 'kept'
+      }),
       expect.objectContaining({
         kind: 'user_turn',
         messageIds: ['user-1'],

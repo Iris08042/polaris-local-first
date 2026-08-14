@@ -8,10 +8,8 @@ const WORLD_UNMOUNT_DELAY_MS = 120;
 type WorldFramePresence = {
   renderChat: boolean;
   renderCollection: boolean;
-  renderGroup: boolean;
   hideChat: boolean;
   hideCollection: boolean;
-  hideGroup: boolean;
 };
 
 export function resolveWorldPresenceForRender(
@@ -28,10 +26,8 @@ export function createSettledWorldPresence(activeWorld: World): WorldFramePresen
   return {
     renderChat: activeWorld === 'chat',
     renderCollection: activeWorld === 'collection',
-    renderGroup: activeWorld === 'group',
     hideChat: false,
-    hideCollection: false,
-    hideGroup: false
+    hideCollection: false
   };
 }
 
@@ -39,10 +35,8 @@ export function createSwitchWorldPresence(current: WorldFramePresence, activeWor
   return {
     renderChat: current.renderChat || activeWorld === 'chat',
     renderCollection: current.renderCollection || activeWorld === 'collection',
-    renderGroup: current.renderGroup || activeWorld === 'group',
     hideChat: activeWorld === 'chat' ? false : current.hideChat,
-    hideCollection: activeWorld === 'collection' ? false : current.hideCollection,
-    hideGroup: activeWorld === 'group' ? false : current.hideGroup
+    hideCollection: activeWorld === 'collection' ? false : current.hideCollection
   };
 }
 
@@ -50,8 +44,7 @@ export function createHiddenWorldPresence(current: WorldFramePresence, activeWor
   return {
     ...current,
     hideChat: activeWorld !== 'chat' && current.renderChat,
-    hideCollection: activeWorld !== 'collection' && current.renderCollection,
-    hideGroup: activeWorld !== 'group' && current.renderGroup
+    hideCollection: activeWorld !== 'collection' && current.renderCollection
   };
 }
 

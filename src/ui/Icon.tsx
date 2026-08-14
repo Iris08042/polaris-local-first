@@ -16,7 +16,6 @@ export type IconName =
   | 'navCard'
   | 'navWorkspace'
   | 'navImage'
-  | 'navGroup'
   | 'navInfo'
   | 'edit'
   | 'refresh'
@@ -256,29 +255,6 @@ export function Icon({ name, size = 18, color = 'currentColor' }: Props) {
           <rect x="4.7" y="5.1" width="14.6" height="13.8" rx="3.1" fill="none" stroke={color} strokeWidth={strokeBold} />
           <circle cx="9" cy="9.25" r="1.35" fill="none" stroke={color} strokeWidth={strokeSoft} />
           <path d="M6.9 16L10.1 12.5L12.55 14.75L14.55 12.55L17.55 16" fill="none" stroke={color} strokeWidth={strokeSoft} strokeLinecap="round" strokeLinejoin="round" />
-        </>
-      )}
-    </>,
-    navGroup: <>
-      {navDefs}
-      {navActive ? (
-        <>
-          <path d="M7.1 18.35C7.1 15.78 9.2 13.7 11.8 13.7H12.2C14.8 13.7 16.9 15.78 16.9 18.35V18.85H7.1V18.35Z" fill={navFill} />
-          <circle cx="12" cy="8.95" r="3.25" fill={navFill} />
-          <path d="M4.65 17.45C4.85 15.65 6.05 14.18 7.67 13.58C8.12 14.02 8.66 14.38 9.25 14.62C8.35 15.42 7.75 16.58 7.65 17.88H4.65V17.45Z" fill={navFill} fillOpacity="0.64" />
-          <circle cx="7.25" cy="10.15" r="2.25" fill={navFill} fillOpacity="0.64" />
-          <path d="M16.35 17.88C16.25 16.58 15.65 15.42 14.75 14.62C15.34 14.38 15.88 14.02 16.33 13.58C17.95 14.18 19.15 15.65 19.35 17.45V17.88H16.35Z" fill={navFill} fillOpacity="0.64" />
-          <circle cx="16.75" cy="10.15" r="2.25" fill={navFill} fillOpacity="0.64" />
-          <path d="M12 6.4L12.6 8.34L14.55 8.95L12.6 9.56L12 11.5L11.4 9.56L9.45 8.95L11.4 8.34L12 6.4Z" fill={navDetail} />
-        </>
-      ) : (
-        <>
-          <path d="M7.1 18.35C7.1 15.78 9.2 13.7 11.8 13.7H12.2C14.8 13.7 16.9 15.78 16.9 18.35V18.85H7.1V18.35Z" fill="none" stroke={color} strokeWidth={strokeBold} strokeLinejoin="round" />
-          <circle cx="12" cy="8.95" r="3.25" fill="none" stroke={color} strokeWidth={strokeBold} />
-          <path d="M4.65 17.88V17.45C4.86 15.56 6.17 14.04 7.9 13.52" fill="none" stroke={color} strokeWidth={strokeSoft} strokeLinecap="round" />
-          <circle cx="7.25" cy="10.15" r="2.25" fill="none" stroke={color} strokeWidth={strokeSoft} />
-          <path d="M16.1 13.52C17.83 14.04 19.14 15.56 19.35 17.45V17.88" fill="none" stroke={color} strokeWidth={strokeSoft} strokeLinecap="round" />
-          <circle cx="16.75" cy="10.15" r="2.25" fill="none" stroke={color} strokeWidth={strokeSoft} />
         </>
       )}
     </>,

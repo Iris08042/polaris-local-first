@@ -9,8 +9,10 @@ function hasKnownCollaboratorId(knownCollaboratorIds: KnownCollaboratorIds | und
     : (knownCollaboratorIds as ReadonlySet<string>).has(collaboratorId);
 }
 
-export function isRetiredGroupConversation(conversation: Pick<Conversation, 'groupRoomId'>) {
-  return Boolean(conversation.groupRoomId?.trim());
+export function isRetiredGroupConversation(
+  conversation: Pick<Conversation, 'groupRoomId' | 'kind' | 'group'>
+) {
+  return Boolean(conversation.groupRoomId?.trim()) || isGroupConversation(conversation);
 }
 
 export function isGroupConversation(conversation: Pick<Conversation, 'kind' | 'group'>) {

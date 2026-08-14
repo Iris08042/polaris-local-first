@@ -211,7 +211,6 @@ export function useAppShellController() {
     frontstage: {
       frontstageCollaboratorId,
       editingCollaboratorId,
-      activeWorld,
       collectionShelf,
       setFrontstageCollaboratorId,
       setEditingCollaboratorId,
@@ -249,7 +248,6 @@ export function useAppShellController() {
     shelfItems: desktopSidebarShelfItems,
     onSelectCollaborator: (collaboratorId: string | null) => {
       enterCollaboratorCollectionScope({
-        activeWorld,
         setFrontstageCollaboratorId,
         setCollectionShelf,
         setWorld
@@ -294,11 +292,6 @@ export function useAppShellController() {
       }
     },
     onCreateConversation: navigationActions.openFreshConversation,
-    onOpenGroupWorld: () => {
-      clearPendingAttachments();
-      clearPendingCardReference();
-      setWorld('group');
-    },
     onOpenSettings: overlays.collectionOpenSettings
   };
   const openReplyNotification = (notification: typeof replyNotifications[number]) => {
@@ -345,7 +338,6 @@ export function useAppShellController() {
         setCollectionShelf(shelf);
         setWorld('collection');
       },
-      onOpenGroup: () => setWorld('group'),
       onOpenSettingsPage: overlays.openMenuAt,
       onOpenProviderSettings: overlays.collectionOpenProviderSettings
     },
@@ -367,7 +359,6 @@ export function useAppShellController() {
       backfillOwnershipFromConversations
     },
     chatWorldProps: world.chatWorldProps,
-    groupWorldProps: world.groupWorldProps,
     desktopSidebarProps,
     replyNotificationProps: {
       notifications: replyNotifications,

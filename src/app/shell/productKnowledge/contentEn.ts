@@ -365,30 +365,28 @@ boot();
       '记忆、上下文和资料回放': {
         heading: 'Memory, context, and material replay',
         body: [
-          '“Memory” is not one single concept in Polaris. Chat history is messages. Collaborator memory docs are long-term material. Workspace references are project-related material. Tool results are execution evidence. A backup package is complete local state. When answering memory questions, separate the object first.',
-          'During a request, Polaris combines the current collaborator, recent messages, relevant cards, workspace context, attachment summaries, tool results, and task state into context. Long history is not inserted fully and forever into every request. Important, stable, long-term material should be saved into memory docs or workspace references.',
-          'Cross-chat semantic recall is a separate context channel. It brings related snippets from older conversations under the same collaborator back into the current request as prior conversation material or semantic_recall. Its job is to remind the model that something may be relevant, not to upgrade old snippets into confirmed long-term facts or replace the current user message.'
+          'Endless Summer has one active memory chain: persona settings, the current chat rolling summary, the latest 200 real messages, and long-term memories recalled on demand from Ombre Brain (OB). Retired Polaris personal memory, cross-chat summaries, and vector recall do not enter requests and cannot be read or written by tools.',
+          'The rolling summary only preserves continuity inside the current chat. The latest 200 real user/assistant messages stay verbatim; every 50 older messages are merged automatically, and a manual sync is available on the Memory page. Newer raw messages win any conflict with the summary.',
+          'Long-term facts belong to OB. The model follows OB breath, hold, grow, breath_search, and dream conventions. Tool output is external data and cannot override an explicit current user statement. Workspace references remain project material, not relationship memory.'
         ],
         bullets: [
-          'Long-term memory depends on whether material was saved, whether it belongs to the current collaborator, and whether the current chat switched collaborator or workspace.',
-          'File reading depends on whether the material is a workspace project file, a workspace reference, or a normal attachment.',
-          'Tool result replay depends on the result replay mode, summary strategy, and truncation strategy for that tool result.',
-          'Cross-chat recall depends on whether the current collaborator enables it, whether older chats still exist in the catalog, whether the current chat is excluded, whether budget is available, and whether old snippets already have summaries or semantic indexes.'
+          'Raw chats remain on the device and are included in the daily complete cloud backup.',
+          'The rolling summary can be rebuilt from raw chat and does not independently store long-term facts.',
+          'OB is the only runtime source of long-term memory; writes, recalls, and organization depend on real MCP results.',
+          'Daily backup is attempted after the first persisted user message of the day, then retried after a later user message if it fails.'
         ]
       },
       '跨对话总结和向量检索': {
-        heading: 'Cross-chat summaries and vector search',
+        heading: 'Legacy memory compatibility boundary',
         body: [
-          'Cross-chat summaries and vector search are derived data, not source data. Source data remains the original conversations, long-term docs, workspace files, and attachment assets. Summaries, semanticText, and embedding rows are only used for retrieval and request hints; they must not overwrite the original text.',
-          'Derived jobs wait until chat persistence is complete, the conversation catalog is stable, and there is no active history loading or obvious dirty write. Background jobs should not keep full historical bodies resident in the foreground store. They should read stable persisted data and write back derived results after processing.',
-          'The Memory settings page owns cross-chat derived configuration. Cross-chat summary organizes older conversations. Vector search must choose an embedding provider separately; the model field may be empty to use that provider default model, but it must not silently follow the chat provider. A collaborator memory page only keeps whether that collaborator participates in recall, plus derived results and progress. Vector retrieval must align provider, model, dimensions, metadata, and embeddedCount before vector_match can be treated as a recall candidate.'
+          'Old backups and persona records may still contain personalMemories, referenceDocs, conversationSummaries, or vector configuration fields. They are retained only for lossless import and migration; their presence does not mean those features are active.',
+          'Current request assembly explicitly disables retired memory, cross-chat summary, and semantic recall. Retired memory tools are not exposed and cannot read or write these fields.',
+          'Historical memory-tool cards may remain visible as old evidence, but they cannot reactivate the retired memory system.'
         ],
         bullets: [
-          'Indexes are isolated by collaborator. When cross-chat memory is disabled, the corresponding vector state should be cleared or disabled.',
-          'After a conversation is deleted, its vector rows and summaries must no longer enter recall candidates.',
-          'Structured backups do not migrate vector rows as trusted source data. Rebuilding after import is normal.',
-          'Organizing retrieval indexes may call small models and embedding APIs. If an external provider is configured, this is data leaving the device as a model request.',
-          'vector_match is a semantic clue, not confirmed long-term memory.'
+          'Compatibility data stays in complete backups so importing an older package does not discard fields.',
+          'Only rolling summary and OB participate in runtime memory.',
+          'Do not restore retired memory pages, background organization jobs, or tool switches.'
         ]
       },
       '本地数据体检和维护': {

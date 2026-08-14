@@ -144,6 +144,7 @@ export type AssistantToolContext = {
   mcpToolTimeoutSeconds?: number;
   mcpTools?: McpResolvedToolDefinition[];
   mcpCatalogErrors?: string[];
+  ombreBreathRequired?: boolean;
   desktopLocalHost?: {
     available: boolean;
     platform: string;

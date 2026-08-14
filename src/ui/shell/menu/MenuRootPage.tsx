@@ -11,13 +11,11 @@ type MenuRootPageProps = {
   mcpServerCount: number;
   tokenUsageSummary: MenuTokenUsageSummary;
   storageHealthSnapshot: LocalDataHealthSnapshot | null;
-  memorySettingsVisible: boolean;
   customFontCount: number;
   desktopLocalAvailable: boolean;
   androidApkUpdateAvailable: boolean;
   onOpenDisplay: () => void;
   onOpenFonts: () => void;
-  onOpenMemory: () => void;
   onOpenGeneration: () => void;
   onOpenVoice: () => void;
   onOpenToolbox: () => void;
@@ -40,13 +38,11 @@ export function MenuRootPage({
   mcpServerCount,
   tokenUsageSummary,
   storageHealthSnapshot,
-  memorySettingsVisible,
   customFontCount,
   desktopLocalAvailable,
   androidApkUpdateAvailable,
   onOpenDisplay,
   onOpenFonts,
-  onOpenMemory,
   onOpenGeneration,
   onOpenVoice,
   onOpenToolbox,
@@ -143,15 +139,6 @@ export function MenuRootPage({
         <div className="menu-section-head">
           <span className="menu-section-kicker">{t('settings.section.capabilities')}</span>
         </div>
-        {memorySettingsVisible ? (
-          <MenuSheetItem
-            icon="feather"
-            title={t('settings.memory.title')}
-            detail={t('settings.memory.detail')}
-            helpText={t('settings.memory.help')}
-            onClick={onOpenMemory}
-          />
-        ) : null}
         <MenuSheetItem
           icon="image"
           title={t('settings.generation.title')}

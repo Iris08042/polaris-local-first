@@ -41,7 +41,6 @@ export type PersonaBuilderHandoff = {
   effectivePrompt: string;
   effectiveSource: 'custom' | 'vnext';
   runtimeNote: string;
-  memories: string[];
   introCard: PersonaBuilderIntroCardSeed;
 };
 

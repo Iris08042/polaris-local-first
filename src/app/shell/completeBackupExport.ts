@@ -47,7 +47,7 @@ export type CompleteBackupExportOptions = {
 export function formatCompleteBackupExportError(error: unknown) {
   const message = error instanceof Error ? error.message : '';
   if (/SystemFile/i.test(message) || /not implemented on ios/i.test(message)) {
-    return '当前 App 版暂时无法使用本地备份包，请先使用 WebDAV 导出备份包。';
+    return '当前 App 版暂时无法导出本地备份包，请改用云端备份。';
   }
   return message || '导出备份包失败';
 }
@@ -237,7 +237,7 @@ export async function exportCompleteBackup(options: CompleteBackupExportOptions)
 }> {
   options.onProgress?.({ message: '读取对话和设置' });
   if (getSystemBackupAvailability() === 'unavailable') {
-    throw new Error('当前 App 版请先使用 WebDAV 导出备份包。');
+    throw new Error('当前 App 版暂时无法导出本地备份包，请改用云端备份。');
   }
 
   if (canStreamNativeZipBackupFiles()) {

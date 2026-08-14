@@ -104,7 +104,6 @@ export function CollectionWorld({
         conversationCounts={controller.collaboratorConversationCounts}
         collaboratorScopeId={controller.collaboratorScopeId}
         onSelectCollaboratorScope={controller.onSelectCollaboratorScope}
-        onOpenGroupWorld={controller.onOpenGroupWorld}
         onToggleCollaboratorPinned={controller.onCollaboratorPinToggle}
         onClose={() => onCollaboratorSwitchOpenChange(false)}
         onCreateFromBuilder={onOpenCollaboratorBuilderForCreate}

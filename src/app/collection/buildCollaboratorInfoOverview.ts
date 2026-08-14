@@ -11,7 +11,6 @@ export type CollaboratorInfoOverviewItem = {
   assistantAvatarAssetId: string | null;
   assistantAvatarShape: AvatarShape;
   modelLabel: string | null;
-  memoryCount: number;
   collectionCount: number;
   imageCount: number;
   conversationCount: number;
@@ -67,7 +66,6 @@ export function buildCollaboratorInfoOverview({
       assistantAvatarAssetId: persona.assistantAvatarAssetId,
       assistantAvatarShape: persona.assistantAvatarShape,
       modelLabel,
-      memoryCount: persona.memory.personalMemories.length,
       collectionCount: collectionCounts[persona.id] ?? 0,
       imageCount: imageCounts[persona.id] ?? 0,
       conversationCount: conversationCounts[persona.id] ?? 0,

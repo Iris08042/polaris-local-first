@@ -6,7 +6,7 @@ import { normalizeAppLanguage, type AppLanguage } from '../i18n/appLanguage';
 export const SPACE_FRONTSTAGE_SCHEMA_VERSION = 6;
 
 type PersistedLegacySpaceFrontstageFields = Partial<{
-  activeWorld: World;
+  activeWorld: World | 'group';
   collectionShelf: 'info' | 'code' | 'project' | 'dialogue' | 'image' | 'group';
   frontstageCollaboratorId: string | null;
   chatProjectId: string | null;
@@ -73,7 +73,7 @@ export function migratePersistedSpaceFrontstageState(
       state.activeWorld === 'chat'
         ? 'chat'
         : state.activeWorld === 'group'
-          ? 'group'
+          ? 'chat'
           : 'collection',
     collectionShelf:
       legacyGroupShelf

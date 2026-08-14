@@ -565,7 +565,6 @@ describe('startup fact source boundary', () => {
       'useMcpCatalogHeartbeat',
       'useDesktopWorkspaceAutoSync',
       'useAndroidApkUpdateRuntime',
-      'useAutomaticRollingSummary',
       'useAppTriggerRuntime'
     ]) {
       expect(appShell, hookName).not.toContain(hookName);
@@ -575,7 +574,6 @@ describe('startup fact source boundary', () => {
 
   it('gates background app runtime work behind the startup lifecycle readiness', () => {
     const appRuntime = source('src/ui/app-shell/useAppRuntime.ts');
-    const automaticSummary = source('src/app/chat/useAutomaticRollingSummary.ts');
 
     expect(appRuntime).toContain('const backgroundRuntimeReady = (');
     expect(appRuntime).toContain('persistentStoreLifecycle.startupThemeReady');
@@ -585,7 +583,6 @@ describe('startup fact source boundary', () => {
       'useCompanionRuntime({ enabled: backgroundRuntimeReady })',
       'useMcpCatalogHeartbeat({ enabled: backgroundRuntimeReady })',
       'useAndroidApkUpdateRuntime({ enabled: backgroundRuntimeReady })',
-      'useAutomaticRollingSummary({ enabled: backgroundRuntimeReady })',
       'useCollectionOwnershipBackfill({',
       'startupReady: backgroundRuntimeReady',
       'useAppTriggerRuntime({ chatRuntime, startupReady: backgroundRuntimeReady })'
@@ -593,9 +590,25 @@ describe('startup fact source boundary', () => {
       expect(appRuntime).toContain(call);
     }
 
-    expect(automaticSummary).toContain('enabled: boolean');
-    expect(automaticSummary).toContain('if (!enabled) return');
+    expect(appRuntime).not.toContain('useAutomaticRollingSummary');
+    expect(appRuntime).not.toContain('useCloudBackupRuntime');
+    expect(source('src/app/chat/chatActions.ts')).toContain('runUserTurnMaintenance');
     expect(source('src/ui/app-shell/useCollectionOwnershipBackfill.ts')).toContain('if (!startupReady');
+  });
+
+  it('keeps retired Polaris memory and group runtimes outside the live product graph', () => {
+    expect(sourceFilesContaining(/useAutomaticConversationSummaryMemory|conversationSummaryMemoryActions|conversationSummaryRunner/)).toEqual([]);
+    expect(sourceFilesContaining(/useGroupWorldController|GroupWorld/)).toEqual([]);
+
+    const replyContext = source('src/app/chat/chatReplyContext.ts');
+    expect(replyContext).toContain('memory: false');
+    expect(replyContext).toContain('memoryRecall: false');
+    expect(replyContext).toContain('memoryWrite: false');
+
+    const requestPreparation = source('src/engines/request/requestPreparation.ts');
+    expect(requestPreparation).toContain('memory: undefined');
+    expect(requestPreparation).toContain('enabled: false');
+    expect(requestPreparation).toContain('memoryReferenceDocs: []');
   });
 
   it('keeps the app runtime trigger port separate from ChatWorld render props', () => {

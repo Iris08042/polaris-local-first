@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node tools/clean-dist.mjs && tsc -b && vite build",
     "preview": "vite preview",
     "desktop:dev": "node tools/open-polaris-desktop.mjs --dev-server=http://127.0.0.1:5173",
     "desktop:preview": "npm run build && node tools/open-polaris-desktop.mjs",
@@ -74,7 +74,7 @@
     "jsqr": "^1.4.0",
     "jszip": "^3.10.1",
     "katex": "^0.16.46",
-    "pdfjs-dist": "^5.6.205",
+    "pdfjs-dist": "^6.2.108",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

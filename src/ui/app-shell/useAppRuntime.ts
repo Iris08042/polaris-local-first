@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useAndroidApkUpdateRuntime } from '../../app/android/useAndroidApkUpdateRuntime';
-import { useAutomaticRollingSummary } from '../../app/chat/useAutomaticRollingSummary';
 import { useDesktopWorkspaceAutoSync } from '../../app/desktop/useDesktopWorkspaceAutoSync';
 import { usePersistentStoreLifecycle } from '../../app/bootstrap/usePersistentStoreLifecycle';
 import { useAppTriggerRuntime, type AppTriggerChatRuntimePort } from '../../app/shell/useAppTriggerRuntime';
@@ -20,7 +19,6 @@ import {
 } from '../developer/debugSurfaceState';
 import { usePersistenceReadFailureNotice } from './usePersistenceReadFailureNotice';
 import type { Conversation } from '../../types/domain';
-import { useCloudBackupRuntime } from '../../app/backup/useCloudBackupRuntime';
 
 function readAssetGovernanceDebugEnabled() {
   return readDebugSurfaceEnabled({ developerMode: true, queryParams: ['debugAssets'] });
@@ -55,13 +53,11 @@ export function useAppRuntime({
   useMcpCatalogHeartbeat({ enabled: backgroundRuntimeReady });
   useDesktopWorkspaceAutoSync();
   useAndroidApkUpdateRuntime({ enabled: backgroundRuntimeReady });
-  useAutomaticRollingSummary({ enabled: backgroundRuntimeReady });
   useCollectionOwnershipBackfill({
     startupReady: backgroundRuntimeReady,
     ...collectionOwnershipBackfill
   });
   useAppTriggerRuntime({ chatRuntime, startupReady: backgroundRuntimeReady });
-  useCloudBackupRuntime({ enabled: backgroundRuntimeReady });
 
   const persistenceReadFailureNotice = usePersistenceReadFailureNotice(
     backgroundRuntimeReady

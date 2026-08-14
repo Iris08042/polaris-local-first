@@ -42,28 +42,11 @@ describe('revealCollaboratorInfo', () => {
 });
 
 describe('enterCollaboratorCollectionScope', () => {
-  it('returns to the info shelf before entering a collaborator scope from retired group world state', () => {
-    const events: string[] = [];
-    const setFrontstageCollaboratorId = vi.fn((collaboratorId: string | null) => events.push(`collaborator:${collaboratorId ?? 'null'}`));
-    const setCollectionShelf = vi.fn((shelf: string) => events.push(`shelf:${shelf}`));
-    const setWorld = vi.fn((world: string) => events.push(`world:${world}`));
-
-    enterCollaboratorCollectionScope({
-      activeWorld: 'group',
-      setFrontstageCollaboratorId,
-      setCollectionShelf,
-      setWorld
-    }, 'pharos');
-
-    expect(events).toEqual(['collaborator:pharos', 'shelf:info', 'world:collection']);
-  });
-
-  it('keeps the current non-group shelf when switching collaborator scope', () => {
+  it('keeps the current shelf when switching collaborator scope', () => {
     const setCollectionShelf = vi.fn();
     const setWorld = vi.fn();
 
     enterCollaboratorCollectionScope({
-      activeWorld: 'collection',
       setFrontstageCollaboratorId: vi.fn(),
       setCollectionShelf,
       setWorld

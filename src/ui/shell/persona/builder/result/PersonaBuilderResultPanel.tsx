@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
   expressionLabel,
   personaBaseLabel,
@@ -24,10 +23,6 @@ type PersonaBuilderResultPanelProps = {
   onApplyToCurrent: (patch: PersonaUpdatePatch) => void;
   onCreateCollaborator: (patch: PersonaUpdatePatch, introCard: PersonaBuilderIntroCardSeed) => void;
 };
-
-function mergeMemories(existing: string[], next: string[]) {
-  return Array.from(new Set([...existing, ...next].map((item) => item.trim()).filter(Boolean)));
-}
 
 function buildVisiblePromptPreview(prompt: string) {
   return prompt
@@ -92,74 +87,21 @@ function PersonaResultTextPreview({
   );
 }
 
-function mergeIntroCardMemories(card: PersonaBuilderIntroCardSeed, memories: string[]) {
-  return {
-    ...card,
-    code: card.code.replace(/<span class="memory-count">\d+ 条<\/span>/, `<span class="memory-count">${memories.length} 条</span>`)
-  };
-}
-
 export function PersonaBuilderResultPanel({
-  activePersona,
   draft,
   handoff,
   canApplyToCurrent,
   onApplyToCurrent,
   onCreateCollaborator
 }: PersonaBuilderResultPanelProps) {
-  const [memoryItems, setMemoryItems] = useState(handoff.memories);
-  const [memoryDraft, setMemoryDraft] = useState('');
-  const [memoryDirty, setMemoryDirty] = useState(false);
-  const handoffMemorySignature = handoff.memories.join('\u0000');
-
-  useEffect(() => {
-    if (memoryDirty) return;
-    setMemoryItems(handoff.memories);
-  }, [handoffMemorySignature, memoryDirty]);
-
-  useEffect(() => {
-    setMemoryDirty(false);
-    setMemoryItems(handoff.memories);
-    setMemoryDraft('');
-  }, [activePersona?.id]);
-
-  const confirmedMemories = memoryItems.map((item) => item.trim()).filter(Boolean);
   const finalCompiledPrompt = handoff.compiledPrompt;
-  const updateMemoryItem = (index: number, value: string) => {
-    setMemoryDirty(true);
-    setMemoryItems((current) => current.map((entry, entryIndex) => (
-      entryIndex === index ? value : entry
-    )));
-  };
-  const pruneEmptyMemoryItem = (index: number) => {
-    setMemoryDirty(true);
-    setMemoryItems((current) => current.flatMap((entry, entryIndex) => {
-      if (entryIndex !== index) return [entry];
-      const trimmed = entry.trim();
-      return trimmed ? [trimmed] : [];
-    }));
-  };
-  const addMemoryDraft = () => {
-    const nextValue = memoryDraft.trim();
-    if (!nextValue) return;
-    setMemoryDirty(true);
-    setMemoryItems((current) => mergeMemories(current, [nextValue]));
-    setMemoryDraft('');
-  };
-  const updateMemoryDraft = (value: string) => {
-    setMemoryDirty(true);
-    setMemoryDraft(value);
-  };
 
   const applyBuilderToCurrent = () => {
     onApplyToCurrent({
       ...buildPersonaPatchFromDraft(draft),
       compiledPrompt: finalCompiledPrompt,
       builderManaged: true,
-      generatedPromptMode: 'vnext',
-      memory: {
-        personalMemories: mergeMemories(activePersona?.memory.personalMemories ?? [], confirmedMemories)
-      }
+      generatedPromptMode: 'vnext'
     });
   };
 
@@ -168,11 +110,8 @@ export function PersonaBuilderResultPanel({
       ...buildPersonaPatchFromDraft(draft),
       compiledPrompt: finalCompiledPrompt,
       builderManaged: true,
-      generatedPromptMode: 'vnext',
-      memory: {
-        personalMemories: confirmedMemories
-      }
-    }, mergeIntroCardMemories(handoff.introCard, confirmedMemories));
+      generatedPromptMode: 'vnext'
+    }, handoff.introCard);
   };
 
   return (
@@ -182,57 +121,6 @@ export function PersonaBuilderResultPanel({
         handoff={handoff}
         finalPrompt={finalCompiledPrompt}
       />
-
-      <section className="pb-result-grid">
-        <div className="pb-result-section">
-          <div className="pb-result-head">
-            <strong>建议记忆</strong>
-            <span>{confirmedMemories.length} 条</span>
-          </div>
-          <div className="pb-result-list">
-            {memoryItems.map((item, index) => (
-              <div key={`memory-${index}`} className="pb-memory-chip">
-                <input
-                  className="pb-result-chip pb-memory-input"
-                  value={item}
-                  placeholder="记忆内容"
-                  onChange={(event) => updateMemoryItem(index, event.target.value)}
-                  onBlur={() => pruneEmptyMemoryItem(index)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.currentTarget.blur();
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  className="pb-memory-remove"
-                  aria-label={`删除记忆 ${item}`}
-                  onClick={() => {
-                    setMemoryDirty(true);
-                    setMemoryItems((current) => current.filter((_, entryIndex) => entryIndex !== index));
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            <input
-              className="pb-memory-add pb-memory-add-input"
-              value={memoryDraft}
-              placeholder="＋ 添加记忆"
-              onChange={(event) => updateMemoryDraft(event.target.value)}
-              onBlur={addMemoryDraft}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  addMemoryDraft();
-                }
-              }}
-            />
-          </div>
-        </div>
-      </section>
 
       <div className="pb-actions">
         {canApplyToCurrent && (

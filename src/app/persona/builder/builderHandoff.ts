@@ -1,11 +1,8 @@
 import {
   basePromptGuidance,
   createPersonaTemplate,
-  expressionLabel,
   isNullPersonaBase,
   personaBaseLabel,
-  personaTagCountLabel,
-  personaTagSummary,
   relationshipLabel
 } from '../../../config/persona/personaBuilder';
 import type { Persona } from '../../../types/domain';
@@ -19,10 +16,6 @@ import { buildPersonaVibePrompt, buildPersonaVibeSummary } from './vibeBuilderMo
 
 function compact(text: string) {
   return text.trim().replace(/\s+/g, ' ');
-}
-
-function countSelectedTags(draft: PersonaBuilderDraft) {
-  return Object.values(draft.tags).reduce((total, group) => total + group.length, 0);
 }
 
 function buildVisiblePromptPreview(prompt: string) {
@@ -422,9 +415,8 @@ function buildIntroCardCode(args: {
   draft: PersonaBuilderDraft;
   summary: string;
   prompt: string;
-  memories: string[];
 }) {
-  const { draft, summary, prompt, memories } = args;
+  const { draft, summary, prompt } = args;
   const name = resolvePersonaBuilderName(draft);
   const description = resolvePersonaBuilderDescription(draft);
   const motto = basePromptGuidance(draft.baseId);
@@ -648,7 +640,7 @@ function buildIntroCardCode(args: {
     letter-spacing: 2px;
   }
 
-  .memory-count {
+  .card-kind {
     font-size: 10px;
     color: rgba(255, 255, 255, 0.08);
     letter-spacing: 1px;
@@ -712,9 +704,9 @@ function buildIntroCardCode(args: {
   <div class="card-footer">
     <div class="footer-left">
       <div class="status-dot"></div>
-      <span class="footer-text">建议记忆</span>
+      <span class="footer-text">角色设定</span>
     </div>
-    <span class="memory-count">${memories.length} 条</span>
+    <span class="card-kind">PERSONA</span>
   </div>
 </div>
 </body>
@@ -725,9 +717,8 @@ function buildIntroCardFromHandoff(args: {
   draft: PersonaBuilderDraft;
   summary: string;
   compiledPrompt: string;
-  memories: string[];
 }): PersonaBuilderIntroCardSeed {
-  const { draft, summary, compiledPrompt, memories } = args;
+  const { draft, summary, compiledPrompt } = args;
   const name = resolvePersonaBuilderName(draft);
   const description = resolvePersonaBuilderDescription(draft);
   const shapeTag = personaBaseLabel(draft.baseId);
@@ -739,8 +730,7 @@ function buildIntroCardFromHandoff(args: {
     code: buildIntroCardCode({
       draft,
       summary,
-      prompt: buildVisiblePromptPreview(compiledPrompt),
-      memories
+      prompt: buildVisiblePromptPreview(compiledPrompt)
     }),
     cardFaceCss: buildIntroCardCss(draft),
     tags: ['人设', '首张房间', shapeTag, relationshipLabel(draft.relationship)],
@@ -783,37 +773,15 @@ export function buildPersonaBuilderHandoff(draft: PersonaBuilderDraft): PersonaB
       effectivePrompt: compiledPrompt,
       effectiveSource: 'vnext',
       runtimeNote,
-      memories: [],
       introCard: buildIntroCardFromHandoff({
         draft,
         summary,
-        compiledPrompt,
-        memories: []
+        compiledPrompt
       })
     };
   }
 
   const summary = buildPersonaVibeSummary(draft);
-
-  const memories = [
-    `当前骨架：${personaBaseLabel(draft.baseId)} / ${relationshipLabel(draft.relationship)} / ${expressionLabel(draft.expression)}`,
-    countSelectedTags(draft) > 0
-      ? `当前标签偏向：${personaTagCountLabel(draft.tags)}（${personaTagSummary(draft.tags)}）`
-      : '',
-    compact(draft.purpose) ? `TA的存在目的：${compact(draft.purpose)}` : '',
-    compact(draft.deepDefinition.identityHint) ? `TA认自己是：${compact(draft.deepDefinition.identityHint)}` : '',
-    compact(draft.deepDefinition.missionHint) ? `TA存在是为了：${compact(draft.deepDefinition.missionHint)}` : '',
-    compact(draft.deepDefinition.conflictPriority)
-      ? `任务与关系冲突时，优先${compact(draft.deepDefinition.conflictPriority)}`
-      : '',
-    compact(draft.deepDefinition.conflictReason) ? `这条优先级成立，因为${compact(draft.deepDefinition.conflictReason)}` : '',
-    compact(draft.deepDefinition.avoidBecoming) ? `TA最该避免变成：${compact(draft.deepDefinition.avoidBecoming)}` : '',
-    compact(draft.deepDefinition.correctiveAction) ? `一旦偏掉，TA会${compact(draft.deepDefinition.correctiveAction)}` : '',
-    compact(draft.deepDefinition.vulnerableFirst) ? `用户脆弱时先${compact(draft.deepDefinition.vulnerableFirst)}` : '',
-    compact(draft.deepDefinition.vulnerableThen) ? `接住以后再${compact(draft.deepDefinition.vulnerableThen)}` : '',
-    compact(draft.deepDefinition.hardBoundary) ? `TA的硬边界：${compact(draft.deepDefinition.hardBoundary)}` : '',
-    compact(draft.deepDefinition.hardBoundaryAction) ? `触边界后会：${compact(draft.deepDefinition.hardBoundaryAction)}` : ''
-  ].filter((item, index, list) => item && list.indexOf(item) === index);
 
   return {
     summary,
@@ -821,12 +789,10 @@ export function buildPersonaBuilderHandoff(draft: PersonaBuilderDraft): PersonaB
     effectivePrompt: compiledPrompt,
     effectiveSource: 'vnext',
     runtimeNote,
-    memories,
     introCard: buildIntroCardFromHandoff({
       draft,
       summary,
-      compiledPrompt,
-      memories
+      compiledPrompt
     })
   };
 }

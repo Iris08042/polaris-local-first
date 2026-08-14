@@ -43,8 +43,6 @@ export const collection = {
   'collection.scope.edit': '编辑',
   'collection.scope.settings': '设置',
   'collection.scope.createCollaborator': '新建协作者',
-  'collection.scope.groupChat': '群聊',
-  'collection.scope.groupDetail': '协作者共同空间',
   'collection.scope.allCollaborators': '全部协作者',
   'collection.scope.allRooms': '所有房间',
   'collection.scope.segmentCount': '{count} 段',

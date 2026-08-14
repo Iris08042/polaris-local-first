@@ -87,17 +87,21 @@ function isOrphanedToolResultUnit(unit: RequestContextUnit) {
 
 function selectRequestContextMessageWindow(messages: RequestMessage[], messageLimit: number) {
   const normalizedLimit = Math.max(1, Math.floor(messageLimit));
-  const latestUserMessage = [...messages].reverse().find((message) => message.role === 'user') ?? null;
-  const tailMessages = messages.slice(-normalizedLimit);
-  let selectedMessages = tailMessages;
-  if (latestUserMessage && !tailMessages.some((message) => message.id === latestUserMessage.id)) {
-    const nextMessages = [...tailMessages];
-    while (nextMessages.length >= normalizedLimit) {
-      nextMessages.shift();
-    }
-    nextMessages.push(latestUserMessage);
-    selectedMessages = nextMessages.sort((left, right) => messages.indexOf(left) - messages.indexOf(right));
-  }
+  const realConversationIndexes = messages.flatMap((message, index) => {
+    const isRealConversationMessage = (
+      (message.role === 'user' || message.role === 'assistant')
+      && message.origin !== 'tool-runtime'
+      && message.origin !== 'system-note'
+      && !message.toolInvocation
+      && !messageHasAssistantToolCalls(message)
+      && Boolean(message.content.trim() || message.attachments?.length || message.cardReference)
+    );
+    return isRealConversationMessage ? [index] : [];
+  });
+  const cutoffIndex = realConversationIndexes.length > normalizedLimit
+    ? realConversationIndexes[realConversationIndexes.length - normalizedLimit] ?? 0
+    : 0;
+  const selectedMessages = messages.slice(cutoffIndex);
   const selectedMessageIds = new Set(selectedMessages.map((message) => message.id));
 
   return selectedMessages.filter((message) => {

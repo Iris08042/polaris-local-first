@@ -51,9 +51,7 @@ export function deriveAppShellState({
         : 'light';
   const worldLabel = effectiveWorld === 'collection'
     ? labels.collectionWorld
-    : effectiveWorld === 'group'
-      ? '群聊'
-      : labels.chatWorld;
+    : labels.chatWorld;
   const worldDetail =
     effectiveWorld === 'chat'
       ? (
@@ -66,7 +64,7 @@ export function deriveAppShellState({
       : null;
   const showWorldLabel = true;
   const isAggregateCollectionScope = effectiveWorld === 'collection' && currentCollaborator === null;
-  const showTopbarShell = activeWorld !== 'group';
+  const showTopbarShell = true;
   const showTopbarTitle = !isAggregateCollectionScope;
   const topbarCollaborator = effectiveWorld === 'collection'
     ? currentCollaborator

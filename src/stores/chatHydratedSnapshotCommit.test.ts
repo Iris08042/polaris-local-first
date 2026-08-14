@@ -101,6 +101,27 @@ describe('chat hydrated snapshot commit', () => {
       conversation('c-live'),
       conversation('c-retired', {
         groupRoomId: 'retired-room'
+      }),
+      conversation('c-group', {
+        kind: 'group',
+        group: {
+          title: 'Legacy group',
+          memberIds: ['pharos'],
+          background: 'aurora',
+          replyMode: 'round',
+          allowMemberSilence: false,
+          memoryRecallEnabled: false,
+          toolSettings: {
+            cards: false,
+            images: false,
+            attachments: false,
+            web: false,
+            mcp: false
+          },
+          privateLanes: {},
+          createdAt: 1,
+          updatedAt: 1
+        }
       })
     ])).toEqual([expect.objectContaining({ id: 'c-live' })]);
   });

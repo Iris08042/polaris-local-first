@@ -38,5 +38,6 @@ export function isSidebarLayoutSurface(surface: AppLayoutSurface) {
 }
 
 export function shouldShowDesktopSidebar(surface: AppLayoutSurface, activeWorld: World) {
-  return isSidebarLayoutSurface(surface) && activeWorld !== 'group';
+  void activeWorld;
+  return isSidebarLayoutSurface(surface);
 }

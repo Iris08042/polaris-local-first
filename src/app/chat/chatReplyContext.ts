@@ -332,6 +332,12 @@ export function buildReplyToolContext(args: {
       runCodeSandboxProfile: getRunCodeSandboxProfile(),
       taskMode: taskToolsEnabled ? resolveConversationTaskMode(snapshot.currentTask) : 'seed',
       ...themeToolContext.toolContext,
+      enabledToolGroups: {
+        ...themeToolContext.toolContext.enabledToolGroups,
+        memory: false,
+        memoryRecall: false,
+        memoryWrite: false
+      },
       runtimeFeedback,
       toolEnforcementMode: (
         shouldForceRoomAction ? 'force' : themeToolContext.toolContext.toolEnforcementMode

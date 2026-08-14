@@ -10,8 +10,7 @@ export function createSpaceFrontstageActions(set: SpaceStoreSet): SpaceFrontstag
     set((state) => ({
         activeWorld: state.activeWorld === 'collection' ? 'chat' : 'collection'
       })),
-    setWorld: (world: SpaceFrontstageState['activeWorld']) =>
-      set({ activeWorld: world }),
+    setWorld: (world: SpaceFrontstageState['activeWorld']) => set({ activeWorld: world }),
     setCollectionShelf: (collectionShelf: SpaceFrontstageState['collectionShelf']) => set({ collectionShelf }),
     setFrontstageCollaboratorId: (frontstageCollaboratorId: string | null) =>
       set((state) => switchCollaboratorThemeSession(state, frontstageCollaboratorId)),

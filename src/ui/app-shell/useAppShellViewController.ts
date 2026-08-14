@@ -5,7 +5,7 @@ import {
   recordWorldSwitchStage
 } from '../../app/developer/runtime-performance/runtimePerformanceDebug';
 import type { useAppShellController } from './useAppShellController';
-import { loadChatWorldModule, loadCollectionWorldModule, loadGroupWorldModule, preloadLazyModule } from './appShellLazyModules';
+import { loadChatWorldModule, loadCollectionWorldModule, preloadLazyModule } from './appShellLazyModules';
 import { useCustomFontDomEffects } from '../customFontDomEffects';
 import { useAssetObjectUrl } from '../useAssetObjectUrl';
 import { isSidebarLayoutSurface, isWideLayoutSurface, shouldShowDesktopSidebar } from '../../app/shell/appLayoutSurface';
@@ -80,8 +80,7 @@ function buildStarStyle(customization: AppShellViewControllerInput['customizatio
 
 function worldModuleLoaderFor(world: World) {
   if (world === 'chat') return loadChatWorldModule;
-  if (world === 'collection') return loadCollectionWorldModule;
-  return loadGroupWorldModule;
+  return loadCollectionWorldModule;
 }
 
 function countFilterNodes(root: Element | null) {
@@ -129,15 +128,13 @@ export function useAppShellViewController(props: AppShellViewControllerInput) {
   } = props;
   const isWorldSwitching = [
     worldPresence.renderChat,
-    worldPresence.renderCollection,
-    worldPresence.renderGroup
+    worldPresence.renderCollection
   ].filter(Boolean).length > 1;
   const [isCollaboratorTransitionActive, setIsCollaboratorTransitionActive] = useState(false);
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
   const [worldRetryKeys, setWorldRetryKeys] = useState<WorldRetryKeys>({
     chat: 0,
-    collection: 0,
-    group: 0
+    collection: 0
   });
   const lastCollaboratorTransitionKeyRef = useRef<string | null>(null);
   const backgroundUrl = useAssetObjectUrl(customization.backgroundAssetId ?? undefined, true);
@@ -157,10 +154,6 @@ export function useAppShellViewController(props: AppShellViewControllerInput) {
     () => lazy(() => loadChatWorldModule().then((module) => ({ default: module.ChatWorld }))),
     [worldRetryKeys.chat]
   );
-  const GroupWorld = useMemo(
-    () => lazy(() => loadGroupWorldModule().then((module) => ({ default: module.GroupWorld }))),
-    [worldRetryKeys.group]
-  );
   const retryWorldFrame = (world: World) => {
     setWorldRetryKeys((current) => ({
       ...current,
@@ -176,7 +169,7 @@ export function useAppShellViewController(props: AppShellViewControllerInput) {
 
   useEffect(() => {
     const preloadWorldModules = () => {
-      (['chat', 'collection', 'group'] as const)
+      (['chat', 'collection'] as const)
         .filter((world) => world !== activeWorld)
         .forEach((world) => preloadLazyModule(worldModuleLoaderFor(world)));
     };
@@ -307,13 +300,11 @@ export function useAppShellViewController(props: AppShellViewControllerInput) {
     effectiveDesktopSidebarCollapsed,
     CollectionWorld,
     ChatWorld,
-    GroupWorld,
     worldRetryKeys,
     retryWorldFrame,
     toggleDesktopSidebarCollapsed,
     collectionScopeDrawerOpen,
     collectionFrameInteractive: isWorldFrameInteractive(activeWorld, shellWorld, 'collection'),
-    chatFrameInteractive: isWorldFrameInteractive(activeWorld, shellWorld, 'chat'),
-    groupFrameInteractive: isWorldFrameInteractive(activeWorld, shellWorld, 'group')
+    chatFrameInteractive: isWorldFrameInteractive(activeWorld, shellWorld, 'chat')
   };
 }

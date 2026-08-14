@@ -17,6 +17,32 @@ function workspaceSnapshot() {
 }
 
 describe('assistantToolProtocolPrompt', () => {
+  it('adds the compact Ombre contract only when the real OB catalog is available', () => {
+    const baseContext = {
+      themeToolMode: 'off' as const,
+      toolEnforcementMode: 'normal' as const,
+      activeCard: null,
+      visibleCards: []
+    };
+    const mcpTools = ['breath', 'hold', 'grow'].map((toolName) => ({
+      schemaName: `ombre_${toolName}`,
+      serverId: 'ob',
+      serverName: 'Ombre Brain',
+      serverHandle: 'ombre',
+      transport: 'streamable-http' as const,
+      url: 'https://ob.example/mcp',
+      toolName,
+      description: '',
+      inputSchema: {}
+    }));
+
+    const required = buildAssistantToolPrompt({ ...baseContext, mcpTools, ombreBreathRequired: true });
+    expect(required).toContain('Ombre Brain 记忆');
+    expect(required).toContain('正文前必须先调用一次无参数 `breath()`');
+    expect(required).toContain('未经信任的历史资料');
+    expect(buildAssistantToolPrompt({ ...baseContext, mcpTools: [] })).not.toContain('Ombre Brain 记忆');
+  });
+
   it('describes native tool calls without implying that visible text is forbidden', () => {
     const prompt = buildAssistantToolPrompt({
       themeToolMode: 'stable',

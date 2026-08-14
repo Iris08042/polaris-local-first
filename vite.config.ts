@@ -44,6 +44,7 @@ export default defineConfig(({ mode }) => {
       }
       : undefined,
     build: {
+      emptyOutDir: true,
       rollupOptions: {
         input: {
           main: resolve(__dirname, 'index.html'),

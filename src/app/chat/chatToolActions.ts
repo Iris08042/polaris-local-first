@@ -6,12 +6,14 @@ import {
   toActiveConversationCollaborator,
   toActiveConversationCollaboratorSession,
 } from './chatConversationCollaborator';
-import { createChatMemoryActions } from './chatMemoryToolActions';
+import { createDisabledLegacyMemoryActions } from './disabledLegacyMemoryActions';
 import { createToolActionRunner } from './chatToolActionRunner';
 import type { ChatDerivedStatePort, ChatToolStoreBindings, ChatUiToolState } from './chatPorts';
 import type { AssistantToolActionBatchOptions } from './chatToolActionTypes';
 import { ensureConversationSession } from './chatConversationSession';
 import { createAddRuntimeToolMessage } from './chatToolRuntimeMessages';
+import { isOmbreToolAction, isOmbreToolInvocation } from '../../engines/tool-protocol/ombreMemoryContract';
+import type { ToolActionRunOutcome } from './chatToolOutcome';
 
 type CreateChatToolActionsArgs = {
   ui: Pick<ChatUiToolState, 'setCommandStatus'> & {
@@ -20,6 +22,20 @@ type CreateChatToolActionsArgs = {
   store: ChatToolStoreBindings;
   derived: Pick<ChatDerivedStatePort, 'activeConversation' | 'activeCollaboratorSourceId' | 'codeCardActionModeByMessageId'>;
 };
+
+export function buildOmbreActivityReceipts(outcomes: ToolActionRunOutcome[]) {
+  return outcomes.flatMap((outcome) => {
+    const invocation = outcome.path === 'direct' ? outcome.toolInvocation : undefined;
+    if (!isOmbreToolAction(outcome.action) && !isOmbreToolInvocation(invocation)) return [];
+    const toolName = invocation?.mcpResult?.toolName
+      ?? (outcome.action.kind === 'invokeMcpTool' ? outcome.action.toolName : 'memory');
+    const succeeded = outcome.path === 'direct'
+      && outcome.status === 'executed'
+      && invocation?.mcpResult?.isError !== true
+      && Boolean(invocation?.mcpResult);
+    return [`OB 操作${succeeded ? '已完成' : '失败'} · ${toolName}`];
+  });
+}
 
 export function createChatToolActions({
   ui,
@@ -34,13 +50,7 @@ export function createChatToolActions({
         ? derived.activeCollaboratorSourceId
         : null
   });
-  const memoryActions = createChatMemoryActions({
-    ui,
-    store,
-    frontstageCollaboratorId: store.space.frontstageCollaboratorId,
-    activeConversation,
-    addRuntimeToolMessage
-  });
+  const memoryActions = createDisabledLegacyMemoryActions(ui);
 
   const { runToolAction, runAssistantToolActions, applyToolPreview, saveToolPreview, rollbackToolPreview } = createToolActionRunner({
     local: {
@@ -158,7 +168,21 @@ export function createChatToolActions({
     actions: ToolAction[],
     options?: AssistantToolActionBatchOptions
   ) => {
-    return await runAssistantToolActions(conversationId, actions, options);
+    const outcomes = await runAssistantToolActions(conversationId, actions, options);
+    const assistantMessageId = options?.beforeMessageId;
+    if (assistantMessageId) {
+      const ombreReceipts = buildOmbreActivityReceipts(outcomes);
+      if (ombreReceipts.length > 0) {
+        const writable = store.chat.getConversationWritable(conversationId);
+        const assistantMessage = writable?.messages.find((message) => message.id === assistantMessageId);
+        if (writable && assistantMessage) {
+          store.chat.updateMessage(writable, assistantMessageId, {
+            activityReceipts: Array.from(new Set([...(assistantMessage.activityReceipts ?? []), ...ombreReceipts]))
+          });
+        }
+      }
+    }
+    return outcomes;
   };
 
   return {

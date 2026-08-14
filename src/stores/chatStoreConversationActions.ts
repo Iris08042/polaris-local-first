@@ -10,12 +10,10 @@ import {
 } from './chatConversationDrafts';
 import {
   createDirectConversationRecord,
-  createGroupConversationRecord,
   orphanConversationInRecords,
   renameConversationInRecords,
   toggleConversationPinnedInRecords,
-  touchConversationInRecords,
-  updateGroupConversationInRecords
+  touchConversationInRecords
 } from './chatConversationRecords';
 import {
   markChatIndexDirty,
@@ -30,8 +28,6 @@ type ChatConversationActions = Pick<
   | 'setConversationDraft'
   | 'setActiveConversation'
   | 'createConversation'
-  | 'createGroupConversation'
-  | 'updateGroupConversation'
   | 'touchConversation'
   | 'renameConversation'
   | 'toggleConversationPinned'
@@ -64,6 +60,8 @@ export function createChatConversationActions(
       }),
 
     setActiveConversation: (id) => {
+      const target = get().conversations.find((conversation) => conversation.id === id);
+      if (!target || target.kind === 'group') return;
       set((state) => {
         const patch = activateConversation(state, id);
         if (!patch) return state;
@@ -89,31 +87,6 @@ export function createChatConversationActions(
       }));
       flushChatPersistenceIfHydrated(get, 'create-conversation-flush');
       return next.id;
-    },
-
-    createGroupConversation: (options) => {
-      const next = createGroupConversationRecord(options);
-      set((state) => ({
-        conversations: sortConversations([next, ...state.conversations]),
-        activeConversationId: next.id,
-        ...withConversationBodyStatus(state, next.id, createBodyStatus('loaded')),
-        inputDraft: '',
-        ...markConversationDirty(state, next.id)
-      }));
-      flushChatPersistenceIfHydrated(get, 'create-group-conversation-flush');
-      return next.id;
-    },
-
-    updateGroupConversation: (conversationId, patch) => {
-      set((state) => {
-        const conversations = updateGroupConversationInRecords(state.conversations, conversationId, patch);
-        if (!conversations) return state;
-        return {
-          conversations: sortConversations(conversations),
-          ...markConversationDirty(state, conversationId)
-        };
-      });
-      flushChatPersistenceIfHydrated(get, 'update-group-conversation-flush');
     },
 
     touchConversation: (conversationId) => {

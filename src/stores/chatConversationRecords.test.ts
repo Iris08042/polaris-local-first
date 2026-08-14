@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Conversation } from '../types/domain';
 import {
   createDirectConversationRecord,
-  createGroupConversationRecord,
   orphanConversationInRecords,
   orphanConversationRecord,
   renameConversationInRecords,
@@ -10,9 +9,7 @@ import {
   toggleConversationPinnedInRecords,
   toggleConversationPinnedRecord,
   touchConversationInRecords,
-  touchConversationRecord,
-  updateGroupConversationInRecords,
-  updateGroupConversationRecord
+  touchConversationRecord
 } from './chatConversationRecords';
 
 function directConversation(patch: Partial<Conversation> = {}): Conversation {
@@ -52,68 +49,6 @@ describe('chat conversation records', () => {
     vi.useRealTimers();
   });
 
-  it('creates group conversations with normalized members and default tool settings', () => {
-    const conversation = createGroupConversationRecord({
-      title: ' 工作群 ',
-      memberIds: ['pharos', 'lyra', 'pharos', ' '],
-      lineageId: 'lineage-1'
-    });
-
-    expect(conversation).toEqual(expect.objectContaining({
-      title: '工作群',
-      kind: 'group',
-      collaboratorId: null,
-      groupRoomId: null
-    }));
-    expect(conversation.group).toEqual(expect.objectContaining({
-      title: '工作群',
-      memberIds: ['pharos', 'lyra'],
-      lineageId: 'lineage-1',
-      replyMode: 'round',
-      memoryRecallEnabled: true,
-      toolSettings: {
-        cards: false,
-        images: false,
-        attachments: false,
-        web: false,
-        mcp: false
-      }
-    }));
-  });
-
-  it('updates only real group conversations and merges group tool settings', () => {
-    const groupConversation = createGroupConversationRecord({
-      memberIds: ['pharos']
-    });
-    const updated = updateGroupConversationRecord(groupConversation, {
-      title: '新群名',
-      memberIds: ['lyra', 'lyra'],
-      toolSettings: {
-        cards: false,
-        images: true,
-        attachments: false,
-        web: false,
-        mcp: false
-      }
-    });
-
-    expect(updateGroupConversationRecord(directConversation(), { title: '不会生效' })).toBeNull();
-    expect(updated).toEqual(expect.objectContaining({
-      title: '新群名'
-    }));
-    expect(updated?.group).toEqual(expect.objectContaining({
-      title: '新群名',
-      memberIds: ['lyra'],
-      toolSettings: {
-        cards: false,
-        images: true,
-        attachments: false,
-        web: false,
-        mcp: false
-      }
-    }));
-  });
-
   it('applies small conversation metadata transforms immutably', () => {
     vi.setSystemTime(2345);
 
@@ -141,31 +76,6 @@ describe('chat conversation records', () => {
     }));
 
     vi.useRealTimers();
-  });
-
-  it('updates a matching group conversation inside a record list', () => {
-    const direct = directConversation({ id: 'c-direct' });
-    const group = createGroupConversationRecord({
-      title: '旧群',
-      memberIds: ['pharos'],
-      lineageId: 'lineage-1'
-    });
-
-    const updated = updateGroupConversationInRecords([direct, group], group.id, {
-      title: '新群',
-      memberIds: ['lyra', 'lyra']
-    });
-
-    expect(updateGroupConversationInRecords([direct], direct.id, { title: '不会生效' })).toBeNull();
-    expect(updated?.[0]).toBe(direct);
-    expect(updated?.[1]).toEqual(expect.objectContaining({
-      id: group.id,
-      title: '新群'
-    }));
-    expect(updated?.[1]?.group).toEqual(expect.objectContaining({
-      title: '新群',
-      memberIds: ['lyra']
-    }));
   });
 
   it('applies matching metadata transforms inside a record list', () => {

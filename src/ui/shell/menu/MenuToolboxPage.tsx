@@ -25,11 +25,9 @@ type MenuToolboxPageProps = {
   search: WebSearchConfig;
   toolPromptPreferences: Record<PolarisToolPromptGroup, boolean>;
   desktopLocalAvailable: boolean;
-  memorySearchAvailable: boolean;
   personalDataStatus: NativePersonalDataStatus;
   taskModeEnabled: boolean;
   onBack: () => void;
-  onOpenMemorySettings: () => void;
   onRefreshPersonalDataStatus: () => void;
   onRequestPersonalCalendarAccess: () => void;
   onSetToolPromptGroupEnabled: (group: PolarisToolPromptGroup, enabled: boolean) => void;
@@ -200,11 +198,9 @@ export function MenuToolboxPage({
   search,
   toolPromptPreferences,
   desktopLocalAvailable,
-  memorySearchAvailable,
   personalDataStatus,
   taskModeEnabled,
   onBack,
-  onOpenMemorySettings,
   onRefreshPersonalDataStatus,
   onRequestPersonalCalendarAccess,
   onSetToolPromptGroupEnabled,
@@ -277,19 +273,6 @@ export function MenuToolboxPage({
                     requiresKey={searchRequiresKey}
                     onSetSearchConfig={onSetSearchConfig}
                   />
-                ) : null}
-                {group === 'memoryRecall' && !memorySearchAvailable ? (
-                  <>
-                    <span className="menu-section-kicker">{t('settings.toolbox.memoryRecallSection')}</span>
-                    <p className="menu-section-note">{t('settings.toolbox.memoryRecallUnavailable')}</p>
-                    <button
-                      type="button"
-                      className="memory-doc-import-btn"
-                      onClick={onOpenMemorySettings}
-                    >
-                      {t('settings.toolbox.openMemorySettings')}
-                    </button>
-                  </>
                 ) : null}
                 {group === 'personalData' ? (
                   <PersonalDataInlineConfig

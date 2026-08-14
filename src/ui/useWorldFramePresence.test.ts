@@ -13,10 +13,8 @@ describe('createSwitchWorldPresence', () => {
     ).toEqual({
       renderChat: true,
       renderCollection: true,
-      renderGroup: false,
       hideChat: false,
-      hideCollection: false,
-      hideGroup: false
+      hideCollection: false
     });
   });
 });
@@ -28,20 +26,16 @@ describe('createHiddenWorldPresence', () => {
         {
           renderChat: true,
           renderCollection: true,
-          renderGroup: false,
           hideChat: false,
-          hideCollection: false,
-          hideGroup: false
+          hideCollection: false
         },
         'collection'
       )
     ).toEqual({
       renderChat: true,
       renderCollection: true,
-      renderGroup: false,
       hideChat: true,
-      hideCollection: false,
-      hideGroup: false
+      hideCollection: false
     });
   });
 });
@@ -51,10 +45,8 @@ describe('createSettledWorldPresence', () => {
     expect(createSettledWorldPresence('collection')).toEqual({
       renderChat: false,
       renderCollection: true,
-      renderGroup: false,
       hideChat: false,
-      hideCollection: false,
-      hideGroup: false
+      hideCollection: false
     });
   });
 
@@ -62,21 +54,8 @@ describe('createSettledWorldPresence', () => {
     expect(createSettledWorldPresence('chat')).toEqual({
       renderChat: true,
       renderCollection: false,
-      renderGroup: false,
       hideChat: false,
-      hideCollection: false,
-      hideGroup: false
-    });
-  });
-
-  it('keeps only group mounted after the switch settles', () => {
-    expect(createSettledWorldPresence('group')).toEqual({
-      renderChat: false,
-      renderCollection: false,
-      renderGroup: true,
-      hideChat: false,
-      hideCollection: false,
-      hideGroup: false
+      hideCollection: false
     });
   });
 });
@@ -92,10 +71,8 @@ describe('resolveWorldPresenceForRender', () => {
     ).toEqual({
       renderChat: true,
       renderCollection: true,
-      renderGroup: false,
       hideChat: false,
-      hideCollection: false,
-      hideGroup: false
+      hideCollection: false
     });
   });
 });

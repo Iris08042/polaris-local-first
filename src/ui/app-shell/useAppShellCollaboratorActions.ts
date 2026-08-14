@@ -28,7 +28,6 @@ type AppShellCollaboratorActionsArgs = {
   collaboratorBuilderTargetId: string | null;
   frontstageCollaboratorId: string | null;
   activeCollaboratorId: string | null;
-  activeWorld: World;
   collectionShelf: CollectionShelf;
   activeConversationId: string | null;
   activeConversationCollaboratorId: string | null;
@@ -63,7 +62,6 @@ export function useAppShellCollaboratorActions({
   collaboratorBuilderTargetId,
   frontstageCollaboratorId,
   activeCollaboratorId,
-  activeWorld,
   collectionShelf,
   activeConversationId,
   activeConversationCollaboratorId,
@@ -103,7 +101,6 @@ export function useAppShellCollaboratorActions({
       if (!isCompanionCollaboratorId(targetCollaboratorId)) {
         if (!findPersistedCollaborator(targetCollaboratorId)) {
           enterCollaboratorCollectionScope({
-            activeWorld,
             setFrontstageCollaboratorId,
             setCollectionShelf,
             setWorld
@@ -116,14 +113,12 @@ export function useAppShellCollaboratorActions({
         setEditingCollaboratorId(targetCollaboratorId);
       }
       enterCollaboratorCollectionScope({
-        activeWorld,
         setFrontstageCollaboratorId,
         setCollectionShelf,
         setWorld
       }, targetCollaboratorId);
     } else if (collaboratorId === null) {
       enterCollaboratorCollectionScope({
-        activeWorld,
         setFrontstageCollaboratorId,
         setCollectionShelf,
         setWorld
@@ -158,9 +153,6 @@ export function useAppShellCollaboratorActions({
     if (isCompanionCollaboratorId(collaboratorId)) {
       const connection = companionConnections.find((entry) => entry.collaboratorId === collaboratorId) ?? null;
       if (!connection) return;
-      if (activeWorld === 'group') {
-        setCollectionShelf('dialogue');
-      }
       setFrontstageCollaboratorId(collaboratorId);
       if (activeConversationId !== connection.conversationId) {
         clearPendingAttachments();
@@ -169,9 +161,6 @@ export function useAppShellCollaboratorActions({
       setActiveConversation(connection.conversationId);
       enterChatWorld({ setWorld });
       return;
-    }
-    if (activeWorld === 'group') {
-      setCollectionShelf('dialogue');
     }
     if (!findPersistedCollaborator(collaboratorId)) return;
     setFrontstageCollaboratorId(collaboratorId);

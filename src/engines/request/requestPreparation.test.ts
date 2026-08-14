@@ -6,6 +6,7 @@ import {
   buildRequestImageDataUrl,
   hydrateConversationAssets,
   prepareCollaboratorReplyRequest,
+  resolveContextMessageLimit,
   resolveContextTokenBudget,
   resolvePreparedAdvancedSettings,
   resolveRequestImageHydrationMessageIds
@@ -42,6 +43,15 @@ const textProvider: ProviderProfile = {
     thinking: false
   }
 };
+
+describe('context message limit', () => {
+  it('defaults to 200 and clamps larger saved values back to 200', () => {
+    expect(resolveContextMessageLimit(undefined)).toBe(200);
+    expect(resolveContextMessageLimit('')).toBe(200);
+    expect(resolveContextMessageLimit('500')).toBe(200);
+    expect(resolveContextMessageLimit('120')).toBe(120);
+  });
+});
 
 const visionProvider: ProviderProfile = {
   ...textProvider,
@@ -490,7 +500,7 @@ describe('prepareCollaboratorReplyRequest semantic recall', () => {
     expect(semanticRecall).toBeUndefined();
   });
 
-  it('sends the rolling summary plus only messages after its cursor', async () => {
+  it('keeps the recent raw window even when a rolling-summary cursor exists', async () => {
     const prepared = await prepareCollaboratorReplyRequest({
       api: textProvider,
       persona: createPersonaTemplate({ id: 'pharos', name: 'Pharos', description: '灯塔' }),
@@ -507,7 +517,7 @@ describe('prepareCollaboratorReplyRequest semantic recall', () => {
     });
     const historySummary = prepared.context.segments.find((segment) => segment.kind === 'history_summary');
 
-    expect(prepared.conversation.map((message) => message.id)).toEqual(['fresh-user']);
+    expect(prepared.conversation.map((message) => message.id)).toEqual(['old-user', 'old-assistant', 'fresh-user']);
     expect(historySummary?.messages[0]?.content).toContain('此前已经讨论完旧问题');
     expect(historySummary?.messages[0]?.content).toContain('以原始对话为准');
   });

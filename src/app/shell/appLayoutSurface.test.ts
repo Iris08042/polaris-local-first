@@ -69,11 +69,6 @@ describe('layout surface helpers', () => {
 });
 
 describe('shouldShowDesktopSidebar', () => {
-  it('keeps the global desktop sidebar out of the group world', () => {
-    expect(shouldShowDesktopSidebar('tablet', 'group')).toBe(false);
-    expect(shouldShowDesktopSidebar('desktop', 'group')).toBe(false);
-  });
-
   it('keeps the sidebar available for wide chat and collection worlds', () => {
     expect(shouldShowDesktopSidebar('tablet', 'chat')).toBe(true);
     expect(shouldShowDesktopSidebar('tablet', 'collection')).toBe(true);

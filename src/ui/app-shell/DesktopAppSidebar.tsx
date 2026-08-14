@@ -32,7 +32,6 @@ export type DesktopAppSidebarProps = {
   onToggleConversationPinned: (conversationId: string) => void;
   onDeleteConversation: (conversationId: string, title: string) => void;
   onCreateConversation: () => void;
-  onOpenGroupWorld: () => void;
   onOpenSettings: () => void;
 };
 
@@ -82,7 +81,6 @@ export function DesktopAppSidebar({
   onToggleConversationPinned,
   onDeleteConversation,
   onCreateConversation,
-  onOpenGroupWorld,
   onOpenSettings
 }: DesktopAppSidebarProps) {
   const { language, t } = useI18n();
@@ -302,14 +300,6 @@ export function DesktopAppSidebar({
 
       <nav className="desktop-sidebar-section" aria-label={t('desktop.roomArea')}>
         <p className="desktop-sidebar-section-label">{t('common.room')}</p>
-        <button
-          type="button"
-          className={`desktop-sidebar-nav-item ${activeWorld === 'group' ? 'active' : ''}`}
-          onClick={onOpenGroupWorld}
-        >
-          <Icon name="navGroup" size={18} />
-          <span>群聊</span>
-        </button>
         {shelfItems.map((item) => {
           const active = activeWorld === 'collection' && collectionShelf === item.shelf;
           return (

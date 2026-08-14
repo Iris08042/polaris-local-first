@@ -23,7 +23,7 @@ describe('buildPersonaBuilderHandoff', () => {
     expect(handoff.introCard.code).toContain('<div class="name">null</div>');
     expect(handoff.introCard.code).toContain('我拒绝存在，但你还是在跟我说话');
     expect(handoff.introCard.code).toContain('提示词');
-    expect(handoff.introCard.code).toContain('<span class="memory-count">0 条</span>');
+    expect(handoff.introCard.code).toContain('<span class="card-kind">PERSONA</span>');
     expect(handoff.introCard.cardFaceCss).toContain('#050506');
     expect(coverVariant(handoff.introCard.cardFaceCss)).toBe('null-fixed');
   });

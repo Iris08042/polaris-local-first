@@ -32,9 +32,7 @@ export function AppShellView({
   endlessSummer,
   collectionDeleteCollaborator,
   collaboratorTransitionKey,
-  topbarProps,
   chatWorldProps,
-  groupWorldProps,
   desktopSidebarProps,
   replyNotificationProps,
   overlaysProps,
@@ -53,14 +51,12 @@ export function AppShellView({
   effectiveDesktopSidebarCollapsed,
   CollectionWorld,
   ChatWorld,
-  GroupWorld,
   worldRetryKeys,
   retryWorldFrame,
   toggleDesktopSidebarCollapsed,
   collectionScopeDrawerOpen,
   collectionFrameInteractive,
-  chatFrameInteractive,
-  groupFrameInteractive
+  chatFrameInteractive
 }: AppShellViewProps) {
   const worldStack = (
     <section className="world-stack">
@@ -101,25 +97,6 @@ export function AppShellView({
           >
             <Suspense fallback={<WorldFrameFallback world="chat" />}>
               <ChatWorld {...chatWorldProps} />
-            </Suspense>
-          </WorldFrameBoundary>
-        </div>
-      )}
-      {worldPresence.renderGroup && (
-        <div className={`world-frame group-frame ${activeWorld === 'group' ? 'active' : ''} ${groupFrameInteractive ? 'interactive' : ''} ${worldPresence.hideGroup ? 'occluded' : ''}`}>
-          <WorldFrameBoundary
-            world="group"
-            retryKey={worldRetryKeys.group}
-            onRetry={() => retryWorldFrame('group')}
-          >
-            <Suspense fallback={<WorldFrameFallback world="group" />}>
-              <GroupWorld
-                {...groupWorldProps}
-                shell={{
-                  ...groupWorldProps.shell,
-                  onExitToRoomSwitch: showDesktopSidebar ? groupWorldProps.shell.onExitToRoomSwitch : undefined
-                }}
-              />
             </Suspense>
           </WorldFrameBoundary>
         </div>
@@ -170,7 +147,6 @@ export function AppShellView({
         <EndlessSummerShell
           activeWorld={activeWorld}
           worldStack={worldStack}
-          topbarProps={topbarProps}
           conversations={desktopSidebarProps}
           collaboratorName={endlessSummer.collaboratorName}
           userName={endlessSummer.userName}
@@ -179,7 +155,6 @@ export function AppShellView({
           setCustomization={endlessSummer.setCustomization}
           onOpenChat={endlessSummer.onOpenChat}
           onOpenCollectionShelf={endlessSummer.onOpenCollectionShelf}
-          onOpenGroup={endlessSummer.onOpenGroup}
           onCloseCollectionScope={() => setCollectionCollaboratorSwitchOpen(false)}
           onOpenSettingsPage={endlessSummer.onOpenSettingsPage}
           onOpenProviderSettings={endlessSummer.onOpenProviderSettings}

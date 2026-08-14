@@ -614,7 +614,7 @@ export const settings = {
   'settings.docs.copyFailed': '复制失败',
   'settings.docs.updatedAt': '更新日期：{date}',
   'settings.backup.title': '备份与恢复',
-  'settings.backup.help': '每天首次打开时把无尽夏完整数据备份到腾讯云，也可以手动导出或恢复完整备份包。',
+  'settings.backup.help': '每天发送第一条你的消息后，把无尽夏完整数据备份到腾讯云；也可以手动导出或恢复完整备份包。',
   'settings.backup.pageHelp': '恢复会用备份包里的数据覆盖当前本地数据；不确定时先导出一份当前完整备份。',
   'settings.backup.pageDetail': '完整云备份覆盖聊天、角色、记忆、附件、外观、模型工具配置和后来新增的无尽夏模块设置。',
   'settings.backup.localSection': '本地备份包',

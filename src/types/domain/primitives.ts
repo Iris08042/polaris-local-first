@@ -1,4 +1,4 @@
-export type World = 'collection' | 'chat' | 'group';
+export type World = 'collection' | 'chat';
 export type CollectionShelf = 'info' | 'code' | 'project' | 'dialogue' | 'image';
 export type WorkspaceChatReturnTarget = {
   world: 'chat';

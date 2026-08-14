@@ -101,36 +101,6 @@ describe('chatStore drafts', () => {
     expect(persistToDb).toHaveBeenCalledTimes(1);
   });
 
-  it('creates group conversations as a new isolated conversation kind', () => {
-    const conversationId = useChatStore.getState().createGroupConversation({
-      title: '工作群',
-      memberIds: ['pharos', 'lyra', 'pharos']
-    });
-
-    const conversation = useChatStore.getState().conversations.find((entry) => entry.id === conversationId);
-    expect(conversation).toEqual(expect.objectContaining({
-      id: conversationId,
-      title: '工作群',
-      kind: 'group',
-      collaboratorId: null,
-      groupRoomId: null
-    }));
-    expect(conversation?.group).toEqual(expect.objectContaining({
-      title: '工作群',
-      memberIds: ['pharos', 'lyra'],
-      replyMode: 'round',
-      memoryRecallEnabled: true,
-      toolSettings: {
-        cards: false,
-        images: false,
-        attachments: false,
-        web: false,
-        mcp: false
-      }
-    }));
-    expect(useChatStore.getState().activeConversationId).toBe(conversationId);
-  });
-
   it('flushes hydrated submitted user messages immediately without flushing assistant inserts', () => {
     const persistToDb = vi.fn(async () => {});
     const conversationId = useChatStore.getState().createConversation('pharos');

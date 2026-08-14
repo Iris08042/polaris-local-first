@@ -50,7 +50,6 @@ type UseAppShellOverlayControllerArgs = {
   frontstage: {
     frontstageCollaboratorId: string | null;
     editingCollaboratorId: string | null;
-    activeWorld: Parameters<typeof useAppShellCollaboratorActions>[0]['activeWorld'];
     collectionShelf: Parameters<typeof useAppShellCollaboratorActions>[0]['collectionShelf'];
     setFrontstageCollaboratorId: Parameters<typeof useAppShellCollaboratorActions>[0]['setFrontstageCollaboratorId'];
     setEditingCollaboratorId: Parameters<typeof useAppShellCollaboratorActions>[0]['setEditingCollaboratorId'];
@@ -80,7 +79,6 @@ export function useAppShellOverlayController({
     collaboratorBuilderTargetId: modals.collaboratorBuilderTargetId,
     frontstageCollaboratorId: frontstage.frontstageCollaboratorId,
     activeCollaboratorId: stores.collaborator.activeCollaboratorId,
-    activeWorld: frontstage.activeWorld,
     collectionShelf: frontstage.collectionShelf,
     activeConversationId: stores.chat.activeConversationId,
     activeConversationCollaboratorId: stores.chat.activeConversationCollaboratorId,

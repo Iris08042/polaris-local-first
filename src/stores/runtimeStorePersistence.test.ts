@@ -41,7 +41,7 @@ describe('normalizeRuntimePayload', () => {
     });
   });
 
-  it('keeps conversation summary model settings in the global runtime payload', () => {
+  it('keeps retired summary metadata but cannot reactivate the old runtime', () => {
     const payload = normalizeRuntimePayload({
       conversationSummaryModel: {
         enabled: true,
@@ -55,8 +55,8 @@ describe('normalizeRuntimePayload', () => {
     });
 
     expect(payload.conversationSummaryModel).toEqual({
-      enabled: true,
-      autoUpdateEnabled: true,
+      enabled: false,
+      autoUpdateEnabled: false,
       providerId: 'provider-a',
       modelOverride: 'small-model',
       targetSourceChars: 12_345,

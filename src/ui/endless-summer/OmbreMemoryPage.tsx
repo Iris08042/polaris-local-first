@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CLOUD_BACKUP_CONFIG_CHANGED_EVENT } from '../../app/backup/cloudBackupSettings';
 import {
   fetchOmbreBucket,
@@ -58,9 +58,10 @@ function Importance({ value }: { value: number }) {
   return <span className="es-ombre-importance" aria-label={`重要度 ${count}/10`}>{'●'.repeat(count)}{'○'.repeat(10 - count)}</span>;
 }
 
-function OmbreDetail({ memory, loading, onClose, onChanged }: {
+function OmbreDetail({ memory, loading, error, onClose, onChanged }: {
   memory: OmbreBucket | null;
   loading: boolean;
+  error: string;
   onClose: () => void;
   onChanged: () => void;
 }) {
@@ -91,6 +92,7 @@ function OmbreDetail({ memory, loading, onClose, onChanged }: {
           {memory.whyRemembered ? <blockquote>{memory.whyRemembered}</blockquote> : null}
           <div className="es-ombre-sheet-content">{memory.content || memory.contentPreview || '（空）'}</div>
           {loading ? <p className="es-ombre-detail-loading">正在读取完整内容…<small>Opening memory…</small></p> : null}
+          {error ? <p className="es-ombre-error" role="alert">{error}</p> : null}
           <dl>
             <div><dt>被想起<small>Activation</small></dt><dd>{memory.activationCount} 次</dd></div>
             <div><dt>创建于<small>Created</small></dt><dd>{formatDate(memory.createdAt, true)}</dd></div>
@@ -106,7 +108,7 @@ function OmbreDetail({ memory, loading, onClose, onChanged }: {
             <button type="button" onClick={() => void act('pin')} disabled={Boolean(busyAction)}>{memory.pinned ? '取消钉选' : '钉选'}<small>{memory.pinned ? 'Unpin' : 'Pin'}</small></button>
             <button type="button" onClick={() => void act('resolve')} disabled={Boolean(busyAction)}>{memory.resolved ? '恢复未解决' : '标为已解决'}<small>{memory.resolved ? 'Reopen' : 'Resolve'}</small></button>
             <button type="button" onClick={() => void act('forget')} disabled={Boolean(busyAction)}>{memory.dontSurface ? '恢复浮现' : '暂不浮现'}<small>{memory.dontSurface ? 'Surface' : 'Rest'}</small></button>
-            <button type="button" onClick={() => void act('archive')} disabled={Boolean(busyAction)}>移入档案<small>Archive</small></button>
+            {!memory.archived ? <button type="button" onClick={() => void act('archive')} disabled={Boolean(busyAction)}>移入档案<small>Archive</small></button> : null}
           </div>
           <button type="button" className="es-ombre-copy-id" onClick={() => void navigator.clipboard?.writeText(memory.id)}>ID: {memory.id} · 点击复制</button>
         </div>
@@ -173,8 +175,11 @@ export function OmbreMemoryPage({ onBack }: { onBack: () => void }) {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selected, setSelected] = useState<OmbreBucket | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const listRequestRef = useRef(0);
+  const detailRequestRef = useRef(0);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
@@ -182,6 +187,7 @@ export function OmbreMemoryPage({ onBack }: { onBack: () => void }) {
   }, [search]);
 
   const load = useCallback(async () => {
+    const requestId = ++listRequestRef.current;
     setLoading(true);
     setError('');
     try {
@@ -192,13 +198,15 @@ export function OmbreMemoryPage({ onBack }: { onBack: () => void }) {
           ? searchOmbreBuckets(debouncedSearch)
           : fetchOmbreBuckets({ type: selectedFilter.type, state: selectedFilter.state })
       ]);
+      if (requestId !== listRequestRef.current) return;
       setStatus(nextStatus);
       setItems(list.items);
     } catch (caught) {
+      if (requestId !== listRequestRef.current) return;
       setStatus(null);
       setError(caught instanceof Error ? caught.message : 'Ombre Brain 暂时没有回应');
     } finally {
-      setLoading(false);
+      if (requestId === listRequestRef.current) setLoading(false);
     }
   }, [debouncedSearch, filter]);
 
@@ -209,14 +217,20 @@ export function OmbreMemoryPage({ onBack }: { onBack: () => void }) {
   }, [load]);
 
   const openDetail = async (item: OmbreBucket) => {
+    const requestId = ++detailRequestRef.current;
     setSelected(item);
     setDetailLoading(true);
+    setDetailError('');
     try {
-      setSelected(await fetchOmbreBucket(item.id));
-    } catch {
-      setSelected(item);
+      const detail = await fetchOmbreBucket(item.id);
+      if (requestId === detailRequestRef.current) setSelected(detail);
+    } catch (caught) {
+      if (requestId === detailRequestRef.current) {
+        setSelected(item);
+        setDetailError(caught instanceof Error ? caught.message : '完整记忆读取失败');
+      }
     } finally {
-      setDetailLoading(false);
+      if (requestId === detailRequestRef.current) setDetailLoading(false);
     }
   };
   const total = useMemo(() => status?.total ?? items.length, [items.length, status?.total]);
@@ -251,7 +265,7 @@ export function OmbreMemoryPage({ onBack }: { onBack: () => void }) {
           )) : null}</div>
         </div>
       )}
-      <OmbreDetail memory={selected} loading={detailLoading} onClose={() => setSelected(null)} onChanged={() => { setSelected(null); void load(); }} />
+      <OmbreDetail memory={selected} loading={detailLoading} error={detailError} onClose={() => { detailRequestRef.current += 1; setSelected(null); setDetailError(''); }} onChanged={() => { setSelected(null); setDetailError(''); void load(); }} />
     </section>
   );
 }

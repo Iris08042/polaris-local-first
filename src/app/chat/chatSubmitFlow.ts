@@ -8,6 +8,7 @@ import {
   recordChatSendPerformanceMark
 } from './chatSendPerformanceTrace';
 import { resolveChatReplyPersistenceStatus } from './chatReplyPersistence';
+import type { ChatReplyRunResult } from './chatReplyRuntime';
 
 type SubmitMessageState = {
   inputDraft: string;
@@ -45,7 +46,11 @@ type SubmitMessageHandlers = {
     conversationId: string;
     collaboratorId: string;
     messages: ChatMessage[];
-  }) => Promise<unknown>;
+  }) => Promise<ChatReplyRunResult | void>;
+  onUserTurnSettled?: (params: {
+    conversationId: string;
+    replyResult: ChatReplyRunResult;
+  }) => Promise<void>;
   onUserMessageSubmitted?: (params: {
     conversationId: string;
     message: ChatMessage;
@@ -182,17 +187,31 @@ export async function submitMessage(state: SubmitMessageState, handlers: SubmitM
   });
 
   try {
-    await handlers.requestReply({
+    const replyResult = await handlers.requestReply({
       conversationId: writableSession.conversationId,
       collaboratorId: conversationSession.collaboratorId,
       messages: nextMessages
     });
+    await handlers.onUserTurnSettled?.({
+      conversationId: writableSession.conversationId,
+      replyResult: replyResult ?? { status: 'completed' }
+    });
   } catch (error) {
     const persistenceStatus = resolveChatReplyPersistenceStatus(error);
-    if (!persistenceStatus) throw error;
+    if (!persistenceStatus) {
+      await handlers.onUserTurnSettled?.({
+        conversationId: writableSession.conversationId,
+        replyResult: { status: 'failed' }
+      });
+      throw error;
+    }
     handlers.setCommandStatus(persistenceStatus, true);
     finishChatSendPerformanceTrace(writableSession.conversationId, 'failed', {
       extra: ['persistence boundary failed']
+    });
+    await handlers.onUserTurnSettled?.({
+      conversationId: writableSession.conversationId,
+      replyResult: { status: 'failed' }
     });
   }
 }

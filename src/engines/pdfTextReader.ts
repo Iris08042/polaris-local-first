@@ -118,13 +118,18 @@ function extractPdfPageText(items: unknown[]) {
 
 export async function readPdfText(buffer: ArrayBuffer): Promise<string> {
   const pdfjs = await loadPdfJs();
-  const loadingTask = pdfjs.getDocument({
+  const documentOptions = {
     data: new Uint8Array(buffer),
     isEvalSupported: false,
+    enableScripting: false,
     useSystemFonts: false,
     useWorkerFetch: false,
     stopAtErrors: false
-  });
+  } as Parameters<typeof pdfjs.getDocument>[0] & {
+    isEvalSupported: false;
+    enableScripting: false;
+  };
+  const loadingTask = pdfjs.getDocument(documentOptions);
   const document = await loadingTask.promise;
 
   try {
@@ -144,6 +149,6 @@ export async function readPdfText(buffer: ArrayBuffer): Promise<string> {
 
     return pages.join('\n\n').trim();
   } finally {
-    await document.destroy();
+    await loadingTask.destroy();
   }
 }

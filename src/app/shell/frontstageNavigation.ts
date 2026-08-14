@@ -9,16 +9,11 @@ type CollectionWorldSetter = WorldSetter & {
 };
 
 type CollaboratorCollectionScopeSetter = CollectionWorldSetter & {
-  activeWorld: World;
   setFrontstageCollaboratorId: (collaboratorId: string | null) => void;
 };
 
 export function enterChatWorld(frontstage: WorldSetter) {
   frontstage.setWorld('chat');
-}
-
-export function enterGroupWorld(frontstage: WorldSetter) {
-  frontstage.setWorld('group');
 }
 
 export function revealCollectionShelf(frontstage: CollectionWorldSetter, shelf: CollectionShelf) {
@@ -35,8 +30,5 @@ export function enterCollaboratorCollectionScope(
   collaboratorId: string | null
 ) {
   frontstage.setFrontstageCollaboratorId(collaboratorId);
-  if (frontstage.activeWorld === 'group') {
-    frontstage.setCollectionShelf('info');
-  }
   frontstage.setWorld('collection');
 }

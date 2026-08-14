@@ -22,8 +22,8 @@ export function normalizeConversationSummaryModelSettings(
   const rawLastUpdatedAt = value?.lastUpdatedAt;
 
   return {
-    enabled: value?.enabled === true,
-    autoUpdateEnabled: value?.autoUpdateEnabled === true,
+    enabled: false,
+    autoUpdateEnabled: false,
     providerId: value?.providerId?.trim() ?? '',
     modelOverride: value?.modelOverride?.trim() ?? '',
     targetSourceChars,
@@ -33,15 +33,4 @@ export function normalizeConversationSummaryModelSettings(
         ? Math.floor(rawLastUpdatedAt)
         : 0
   };
-}
-
-export function mergeConversationSummaryModelSettings(
-  current: ConversationSummaryModelSettings,
-  patch: Partial<ConversationSummaryModelSettings>
-): ConversationSummaryModelSettings {
-  return normalizeConversationSummaryModelSettings({
-    ...current,
-    ...patch,
-    lastUpdatedAt: patch.lastUpdatedAt ?? Date.now()
-  });
 }

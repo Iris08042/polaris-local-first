@@ -19,7 +19,6 @@ type CollaboratorScopeStripProps = {
   };
   collaboratorScopeId: string | null;
   onSelectCollaboratorScope: (collaboratorId: string | null) => void;
-  onOpenGroupWorld: () => void;
   onToggleCollaboratorPinned: (collaboratorId: string) => void;
   onClose: () => void;
   onCreateFromBuilder: () => void;
@@ -33,7 +32,6 @@ export function CollaboratorScopeStrip({
   conversationCounts,
   collaboratorScopeId,
   onSelectCollaboratorScope,
-  onOpenGroupWorld,
   onToggleCollaboratorPinned,
   onClose,
   onCreateFromBuilder,
@@ -156,31 +154,6 @@ export function CollaboratorScopeStrip({
               />
             </CreateActionSheet>
           </div>
-          <button
-            type="button"
-            className="collaborator-scope-card collaborator-scope-card--special collaborator-scope-card--group"
-            onClick={(event) => {
-              if (editingOpen) return;
-              runSelectionAction(() => {
-                setCreatePickerOpen(false);
-                onOpenGroupWorld();
-                onClose();
-              }, { element: event.currentTarget });
-            }}
-            role="tab"
-            aria-selected={false}
-            aria-disabled={editingOpen || undefined}
-          >
-            <span className="collaborator-scope-card-title">
-              <span className="collaborator-scope-group-mark" aria-hidden="true">
-                <Icon name="navGroup" size={18} />
-              </span>
-              <strong>{t('collection.scope.groupChat')}</strong>
-            </span>
-            <span className="collaborator-scope-card-meta">
-              <span>{t('collection.scope.groupDetail')}</span>
-            </span>
-          </button>
           <button
             type="button"
             className={`collaborator-scope-card collaborator-scope-card--special collaborator-scope-card--aggregate ${collaboratorScopeId === null ? 'active' : ''}`}

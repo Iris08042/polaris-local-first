@@ -616,7 +616,7 @@ export const settings = {
   'settings.docs.copyFailed': 'Copy failed',
   'settings.docs.updatedAt': 'Updated {date}',
   'settings.backup.title': 'Backup & restore',
-  'settings.backup.help': 'Back up all Endless Summer data to Tencent Cloud on the first launch each day, or manually export and restore a complete package.',
+  'settings.backup.help': 'Back up all Endless Summer data to Tencent Cloud after your first sent message each day, or manually export and restore a complete package.',
   'settings.backup.pageHelp': 'Restoring replaces current local data with the backup package. Export a fresh backup first if you are unsure.',
   'settings.backup.pageDetail': 'Complete cloud backups include chats, personas, memory, attachments, appearance, model and tool settings, and later Endless Summer modules.',
   'settings.backup.localSection': 'Backup files',

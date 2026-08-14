@@ -65,7 +65,6 @@ describe('useAppShellCollaboratorActions', () => {
       collaboratorBuilderTargetId: null,
       frontstageCollaboratorId: null,
       activeCollaboratorId: 'pharos',
-      activeWorld: 'collection',
       collectionShelf: 'info',
       activeConversationId: null,
       activeConversationCollaboratorId: null,
@@ -121,7 +120,6 @@ describe('useAppShellCollaboratorActions', () => {
       collaboratorBuilderTargetId: null,
       frontstageCollaboratorId: null,
       activeCollaboratorId: null,
-      activeWorld: 'collection',
       collectionShelf: 'info',
       activeConversationId: null,
       activeConversationCollaboratorId: null,
@@ -181,7 +179,7 @@ describe('useAppShellCollaboratorActions', () => {
     expect(setCollaboratorBuilderTargetId).toHaveBeenCalledWith(null);
   });
 
-  it('returns to collection before opening a collaborator info page from retired group world state', () => {
+  it('opens a collaborator info page in collection', () => {
     const setActiveCollaborator = vi.fn();
     const setEditingCollaboratorId = vi.fn();
     const setFrontstageCollaboratorId = vi.fn();
@@ -202,7 +200,6 @@ describe('useAppShellCollaboratorActions', () => {
       collaboratorBuilderTargetId: null,
       frontstageCollaboratorId: null,
       activeCollaboratorId: null,
-      activeWorld: 'group',
       collectionShelf: 'info',
       activeConversationId: null,
       activeConversationCollaboratorId: null,
@@ -263,7 +260,6 @@ describe('useAppShellCollaboratorActions', () => {
       collaboratorBuilderTargetId: null,
       frontstageCollaboratorId: 'persona-missing',
       activeCollaboratorId: 'pharos',
-      activeWorld: 'collection',
       collectionShelf: 'info',
       activeConversationId: 'conversation-zombie',
       activeConversationCollaboratorId: 'persona-missing',

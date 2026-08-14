@@ -11,21 +11,19 @@ import { getDesktopLocalHostBridge } from '../../desktop/localHost';
 import { saveAsset } from '../../infrastructure/assetStore';
 import type { AppCustomization, CollectionShelf, World } from '../../types/domain';
 import { Icon, type IconName } from '../Icon';
-import { AppTopbar, type AppTopbarProps } from '../shell/AppTopbar';
 import type { DesktopAppSidebarProps } from '../app-shell/DesktopAppSidebar';
 import { useAssetObjectUrl } from '../useAssetObjectUrl';
 import { OmbreMemoryPage } from './OmbreMemoryPage';
 import { RollingSummaryPage } from './RollingSummaryPage';
 
 type NavigationPage = 'chat' | 'memory' | 'home' | 'features' | 'settings';
-type PrimaryPage = NavigationPage | 'collection' | 'legacy' | 'ombre' | 'rolling';
-type CollectionParentPage = 'memory' | 'features' | 'settings';
+type PrimaryPage = NavigationPage | 'collection' | 'ombre' | 'rolling';
+type CollectionParentPage = 'features' | 'settings';
 type MobileConversationNavigation = Omit<DesktopAppSidebarProps, 'collapsed' | 'onToggleCollapsed'>;
 
 export type EndlessSummerShellProps = {
   activeWorld: World;
   worldStack: ReactNode;
-  topbarProps: AppTopbarProps;
   conversations: MobileConversationNavigation;
   collaboratorName: string;
   userName: string;
@@ -34,7 +32,6 @@ export type EndlessSummerShellProps = {
   setCustomization: (patch: Partial<AppCustomization>) => void;
   onOpenChat: () => void;
   onOpenCollectionShelf: (shelf: CollectionShelf) => void;
-  onOpenGroup: () => void;
   onCloseCollectionScope: () => void;
   onOpenSettingsPage: (page: MenuOverlayPage) => void;
   onOpenProviderSettings: () => void;
@@ -255,9 +252,8 @@ function MemoryPage({ onOpenOmbre, onOpenRolling }: { onOpenOmbre: () => void; o
 
 function FeaturesPage({
   onOpenSettingsPage,
-  onOpenCollectionShelf,
-  onOpenGroup
-}: Pick<EndlessSummerShellProps, 'onOpenSettingsPage' | 'onOpenCollectionShelf' | 'onOpenGroup'>) {
+  onOpenCollectionShelf
+}: Pick<EndlessSummerShellProps, 'onOpenSettingsPage' | 'onOpenCollectionShelf'>) {
   const heartbeat = useHeartbeatMode();
   return (
     <section className="es-page es-scroll-page">
@@ -270,7 +266,6 @@ function FeaturesPage({
       </button>
       <div className="es-feature-grid">
         <HubCard icon="cardStack" title="收藏与资料" detail="图片、文件和卡片" onClick={() => onOpenCollectionShelf('project')} />
-        <HubCard icon="navGroup" title="协作者与群聊" detail="共同空间" onClick={onOpenGroup} />
         <HubCard icon="mcpService" title="外部工具" detail="MCP 与扩展能力" onClick={() => onOpenSettingsPage('mcp')} />
       </div>
       <h2 className="es-future-title">以后一起玩</h2>
@@ -284,10 +279,6 @@ const COLLECTION_TABS: Record<CollectionParentPage, Array<{ shelf: CollectionShe
     { shelf: 'project', label: '文件' },
     { shelf: 'code', label: '卡片' },
     { shelf: 'image', label: '图片' }
-  ],
-  memory: [
-    { shelf: 'dialogue', label: '原始档案' },
-    { shelf: 'info', label: '长期资料' }
   ],
   settings: [
     { shelf: 'info', label: '角色资料' }
@@ -308,13 +299,13 @@ function CollectionPage({
   onSelectShelf: (shelf: CollectionShelf) => void;
 }) {
   const tabs = COLLECTION_TABS[parentPage];
-  const title = parentPage === 'memory' ? '记忆资料' : parentPage === 'settings' ? '角色资料' : '收藏与资料';
-  const subtitle = parentPage === 'memory' ? '叶明舟记得的原始内容' : parentPage === 'settings' ? '角色设定与长期信息' : '图片、文件和卡片都在这里';
+  const title = parentPage === 'settings' ? '角色资料' : '收藏与资料';
+  const subtitle = parentPage === 'settings' ? '角色设定与长期信息' : '图片、文件和卡片都在这里';
 
   return (
     <section className="es-collection-page" aria-label={title}>
       <header className="es-collection-header">
-        <button type="button" onClick={onBack} aria-label={`返回${parentPage === 'features' ? '功能' : parentPage === 'memory' ? '记忆' : '设置'}`}>‹</button>
+        <button type="button" onClick={onBack} aria-label={`返回${parentPage === 'features' ? '功能' : '设置'}`}>‹</button>
         <div><h1>{title}</h1><p>{subtitle}</p></div>
         <Flower />
       </header>
@@ -469,14 +460,8 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
 
   useEffect(() => {
     if (previousWorldRef.current === props.activeWorld) return;
-    const previousWorld = previousWorldRef.current;
     previousWorldRef.current = props.activeWorld;
-    if (previousWorld === 'group' && props.activeWorld === 'collection') {
-      props.onCloseCollectionScope();
-      setPage('features');
-      return;
-    }
-    setPage(props.activeWorld === 'chat' ? 'chat' : props.activeWorld === 'collection' ? 'collection' : 'legacy');
+    setPage(props.activeWorld === 'collection' ? 'collection' : 'chat');
   }, [props.activeWorld]);
 
   const chooseImage = () => fileInputRef.current?.click();
@@ -495,18 +480,13 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
     props.onOpenCollectionShelf(shelf);
     setPage('collection');
   };
-  const openLegacyGroup = () => {
-    props.onCloseCollectionScope();
-    props.onOpenGroup();
-    setPage('legacy');
-  };
   const navigate = (next: NavigationPage) => {
     if (next === 'chat') props.onOpenChat();
     setPage(next);
   };
-  const selectedNavPage: NavigationPage = page === 'legacy'
-    ? (props.activeWorld === 'chat' ? 'chat' : 'features')
-    : page === 'collection' ? collectionParentPage : page === 'ombre' || page === 'rolling' ? 'memory' : page;
+  const selectedNavPage: NavigationPage = page === 'collection'
+    ? collectionParentPage
+    : page === 'ombre' || page === 'rolling' ? 'memory' : page;
 
   return (
     <div className={`es-shell es-page-${selectedNavPage}`}>
@@ -514,7 +494,6 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
       {page === 'chat' ? (
         <><ChatHeader collaboratorName={props.collaboratorName} onOpenDrawer={() => setDrawerOpen(true)} onOpenSettings={() => setPage('settings')} onOpenSettingsPage={props.onOpenSettingsPage} /><div className="es-world-slot">{props.worldStack}</div></>
       ) : null}
-      {page === 'legacy' ? <><AppTopbar {...props.topbarProps} /><div className="es-world-slot">{props.worldStack}</div></> : null}
       {page === 'collection' ? (
         <CollectionPage
           parentPage={collectionParentPage}
@@ -528,7 +507,7 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
       {page === 'memory' ? <MemoryPage onOpenOmbre={() => setPage('ombre')} onOpenRolling={() => setPage('rolling')} /> : null}
       {page === 'ombre' ? <OmbreMemoryPage onBack={() => setPage('memory')} /> : null}
       {page === 'rolling' ? <RollingSummaryPage onBack={() => setPage('memory')} /> : null}
-      {page === 'features' ? <FeaturesPage onOpenSettingsPage={props.onOpenSettingsPage} onOpenCollectionShelf={(shelf) => openCollectionShelf(shelf, 'features')} onOpenGroup={openLegacyGroup} /> : null}
+      {page === 'features' ? <FeaturesPage onOpenSettingsPage={props.onOpenSettingsPage} onOpenCollectionShelf={(shelf) => openCollectionShelf(shelf, 'features')} /> : null}
       {page === 'settings' ? <SettingsPage collaboratorName={props.collaboratorName} customization={props.customization} setCustomization={props.setCustomization} onChooseImage={chooseImage} onOpenCollectionShelf={(shelf) => openCollectionShelf(shelf, 'settings')} onOpenSettingsPage={props.onOpenSettingsPage} onOpenProviderSettings={props.onOpenProviderSettings} /> : null}
       {uploadError ? <p className="es-upload-error" role="alert">{uploadError}</p> : null}
       <nav className="es-primary-nav" aria-label="一级导航">

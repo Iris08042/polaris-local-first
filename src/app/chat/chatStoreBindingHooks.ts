@@ -21,8 +21,6 @@ export function useChatConversationStoreBindings() {
     hydrated: useChatStore((state) => state.hydrated),
     setActiveConversation: useChatStore((state) => state.setActiveConversation),
     createConversation: useChatStore((state) => state.createConversation),
-    createGroupConversation: useChatStore((state) => state.createGroupConversation),
-    updateGroupConversation: useChatStore((state) => state.updateGroupConversation),
     getConversationWritable: useChatStore((state) => state.getConversationWritable),
     ensureConversationMessagesLoaded: useChatStore((state) => state.ensureConversationMessagesLoaded),
     ensureConversationWritable: useChatStore((state) => state.ensureConversationWritable),

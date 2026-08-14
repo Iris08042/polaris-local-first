@@ -39,7 +39,7 @@ export function formatMenuLocalBackupError(error: unknown, action: '导出' | '�
   if (action === '导出') return formatCompleteBackupExportError(error);
   const message = error instanceof Error ? error.message : '';
   if (/SystemFile/i.test(message) || /not implemented on ios/i.test(message)) {
-    return '当前 App 版暂时无法使用本地备份包，请改用云端备份。';
+    return `当前 App 版暂时无法${action}本地备份包，请改用云端备份。`;
   }
   if (/I\/O read operation failed|读取导入文件失败/i.test(message)) {
     return 'iOS 没能读到刚选中的备份文件。请先在“文件”App 或 iCloud 里确认备份包已经下载完成，再重新选择一次；这一步还没有开始解析备份内容。';

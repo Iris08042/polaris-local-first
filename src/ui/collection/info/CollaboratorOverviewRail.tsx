@@ -32,10 +32,6 @@ const COUNT_LABEL_KEYS = {
     one: 'collaborator.overview.conversationCountOne',
     many: 'collaborator.overview.conversationCountMany'
   },
-  memory: {
-    one: 'collaborator.overview.memoryCountOne',
-    many: 'collaborator.overview.memoryCountMany'
-  }
 } satisfies Record<string, { one: I18nKey; many: I18nKey }>;
 
 function countKey(kind: keyof typeof COUNT_LABEL_KEYS, count: number) {
@@ -145,7 +141,6 @@ export function CollaboratorOverviewRail({
                   <span>{t(countKey('collection', item.collectionCount), { count: formatNumber(item.collectionCount) })}</span>
                   <span>{t(countKey('image', item.imageCount), { count: formatNumber(item.imageCount) })}</span>
                   <span>{t(countKey('conversation', item.conversationCount), { count: formatNumber(item.conversationCount) })}</span>
-                  <span>{t(countKey('memory', item.memoryCount), { count: formatNumber(item.memoryCount) })}</span>
                 </div>
               </div>
             </button>

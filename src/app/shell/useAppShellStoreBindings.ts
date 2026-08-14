@@ -35,8 +35,6 @@ export function useAppShellStoreBindings() {
   const loadedMessageConversationIds = useChatStore((state) => state.loadedMessageConversationIds);
   const activeConversationId = useChatStore((state) => state.activeConversationId);
   const createConversation = useChatStore((state) => state.createConversation);
-  const createGroupConversation = useChatStore((state) => state.createGroupConversation);
-  const updateGroupConversation = useChatStore((state) => state.updateGroupConversation);
   const renameConversation = useChatStore((state) => state.renameConversation);
   const toggleConversationPinned = useChatStore((state) => state.toggleConversationPinned);
   const deleteConversation = useChatStore((state) => state.deleteConversation);
@@ -98,8 +96,6 @@ export function useAppShellStoreBindings() {
       activeConversationCollaboratorId,
       activeConversationMessageCount,
       createConversation,
-      createGroupConversation,
-      updateGroupConversation,
       renameConversation,
       toggleConversationPinned,
       orphanConversation,

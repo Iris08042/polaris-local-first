@@ -70,9 +70,9 @@ describe('readDocumentAttachment', () => {
                 ]
           })),
           cleanup: pageCleanup
-        })),
-        destroy
-      })
+        }))
+      }),
+      destroy
     });
 
     const file = new File([new Uint8Array([1, 2, 3])], 'sample.pdf', { type: 'application/pdf' });
@@ -83,6 +83,10 @@ describe('readDocumentAttachment', () => {
 
     expect(globalWorkerOptions.workerSrc).toBe('/mock-pdf.worker.mjs');
     expect(getDocumentMock).toHaveBeenCalledTimes(1);
+    expect(getDocumentMock).toHaveBeenCalledWith(expect.objectContaining({
+      isEvalSupported: false,
+      enableScripting: false
+    }));
     expect(createStoredAttachmentMock).toHaveBeenCalledTimes(1);
     expect(pageCleanup).toHaveBeenCalledTimes(2);
     expect(destroy).toHaveBeenCalledTimes(1);
@@ -101,9 +105,9 @@ describe('readDocumentAttachment', () => {
             items: []
           })),
           cleanup: vi.fn()
-        })),
-        destroy
-      })
+        }))
+      }),
+      destroy
     });
 
     const file = new File([new Uint8Array([1, 2, 3])], 'empty.pdf', { type: 'application/pdf' });

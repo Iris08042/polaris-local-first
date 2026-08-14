@@ -7,19 +7,29 @@ import { selectRuntimeApi, selectVisibleProviders, useRuntimeStore } from '../..
 import type { ChatMessage, Conversation, ConversationRollingSummary, Persona } from '../../types/domain';
 
 export const ROLLING_SUMMARY_TRIGGER_MESSAGE_COUNT = 50;
+export const ROLLING_SUMMARY_RAW_CONTEXT_MESSAGE_COUNT = 200;
+const ROLLING_SUMMARY_MAX_OUTPUT_TOKENS = '1600';
 const ROLLING_SUMMARY_RECEIPT = '滚动摘要已更新';
 const ROLLING_SUMMARY_FAILURE_RECEIPT = '滚动摘要更新失败';
 const runningConversationIds = new Set<string>();
 
-function appendRollingSummaryReceipt(conversationId: string, receipt: string) {
-  const latestConversation = useChatStore.getState().conversations.find((item) => item.id === conversationId);
-  const latestAssistant = [...(latestConversation?.messages ?? [])]
-    .reverse()
-    .find((message) => message.role === 'assistant' && !message.toolInvocation);
+async function appendRollingSummaryReceipt(conversationId: string, messageId: string | null, receipt: string) {
+  if (!messageId) return;
   const writable = useChatStore.getState().getConversationWritable(conversationId);
-  if (!latestAssistant || !writable) return;
-  const receipts = Array.from(new Set([...(latestAssistant.activityReceipts ?? []), receipt]));
-  useChatStore.getState().updateMessage(writable, latestAssistant.id, { activityReceipts: receipts });
+  const assistant = writable?.messages.find((message) => message.id === messageId);
+  if (!assistant || assistant.role !== 'assistant' || assistant.toolInvocation || !writable) return;
+  const receipts = Array.from(new Set([...(assistant.activityReceipts ?? []), receipt]));
+  useChatStore.getState().updateMessage(writable, assistant.id, { activityReceipts: receipts });
+  await useChatStore.getState().persistToDb();
+}
+
+export function resolveRollingSummaryReceiptMessageId(messages: ChatMessage[]) {
+  return [...messages]
+    .reverse()
+    .find((message) => message.role === 'assistant'
+      && !message.toolInvocation
+      && (message.nativeToolCalls?.length ?? 0) === 0
+      && Boolean(message.content.trim() || message.thinkingText?.trim()))?.id ?? null;
 }
 
 export function isRollingSummarySourceMessage(message: ChatMessage) {
@@ -27,19 +37,14 @@ export function isRollingSummarySourceMessage(message: ChatMessage) {
     && message.origin !== 'tool-runtime'
     && message.origin !== 'system-note'
     && !message.toolInvocation
-    && Boolean(message.content.trim());
+    && (message.nativeToolCalls?.length ?? 0) === 0
+    && Boolean(message.content.trim() || message.attachments?.length || message.cardReference);
 }
 
 export function resolveRollingSummarySource(conversation: Pick<Conversation, 'messages' | 'rollingSummary'>) {
   const visibleMessages = conversation.messages.filter(isRollingSummarySourceMessage);
-  let lastUserIndex = -1;
-  for (let index = visibleMessages.length - 1; index >= 0; index -= 1) {
-    if (visibleMessages[index]?.role === 'user') {
-      lastUserIndex = index;
-      break;
-    }
-  }
-  const immutableMessages = lastUserIndex > 0 ? visibleMessages.slice(0, lastUserIndex) : [];
+  const rawBufferStart = Math.max(0, visibleMessages.length - ROLLING_SUMMARY_RAW_CONTEXT_MESSAGE_COUNT);
+  const immutableMessages = visibleMessages.slice(0, rawBufferStart);
   const throughMessageId = conversation.rollingSummary?.throughMessageId;
   const previousIndex = throughMessageId
     ? immutableMessages.findIndex((message) => message.id === throughMessageId)
@@ -49,14 +54,21 @@ export function resolveRollingSummarySource(conversation: Pick<Conversation, 'me
     immutableMessages,
     unsummarizedMessages,
     latestEligibleMessage: unsummarizedMessages[unsummarizedMessages.length - 1] ?? null,
-    bufferedMessages: lastUserIndex >= 0 ? visibleMessages.slice(lastUserIndex) : visibleMessages
+    bufferedMessages: visibleMessages.slice(rawBufferStart)
   };
 }
 
 function formatSourceMessages(messages: ChatMessage[], persona: Persona) {
   const userName = persona.userName.trim() || '用户';
   const assistantName = persona.name.trim() || '协作者';
-  return messages.map((message) => `${message.role === 'user' ? userName : assistantName}：${message.content.trim()}`).join('\n');
+  return messages.map((message) => {
+    const content = [
+      message.content.trim(),
+      ...(message.attachments ?? []).map((attachment) => `附件：${attachment.name}`),
+      ...(message.cardReference ? [`卡片：${message.cardReference.title}`] : [])
+    ].filter(Boolean).join('\n');
+    return `${message.role === 'user' ? userName : assistantName}：${content}`;
+  }).join('\n');
 }
 
 export function buildRollingSummaryContext(args: {
@@ -113,6 +125,7 @@ export async function updateRollingSummaryForConversation(
   const persona = usePersonaStore.getState().personas.find((item) => item.id === conversation.collaboratorId);
   if (!persona) return { status: 'up_to_date', messageCount: 0 };
   const source = resolveRollingSummarySource(conversation);
+  const receiptMessageId = resolveRollingSummaryReceiptMessageId(conversation.messages);
   if (!source.latestEligibleMessage) return { status: 'up_to_date', messageCount: 0 };
   if (!options.force && source.unsummarizedMessages.length < ROLLING_SUMMARY_TRIGGER_MESSAGE_COUNT) {
     return { status: 'below_threshold', messageCount: source.unsummarizedMessages.length };
@@ -138,6 +151,7 @@ export async function updateRollingSummaryForConversation(
         providerId: providerBinding.api.id,
         modelOverride: providerBinding.api.model,
         temperature: '0.2',
+        maxTokens: ROLLING_SUMMARY_MAX_OUTPUT_TOKENS,
         showThinking: false,
         streaming: false,
         customHeaders: '',
@@ -156,11 +170,26 @@ export async function updateRollingSummaryForConversation(
       updatedAt: Date.now()
     } satisfies ConversationRollingSummary;
     const chat = useChatStore.getState();
+    const previousSummary = conversation.rollingSummary;
     chat.setConversationRollingSummary(conversationId, summary);
-    appendRollingSummaryReceipt(conversationId, ROLLING_SUMMARY_RECEIPT);
+    try {
+      await chat.persistToDb();
+    } catch (error) {
+      useChatStore.getState().setConversationRollingSummary(conversationId, previousSummary);
+      throw error;
+    }
+    try {
+      await appendRollingSummaryReceipt(conversationId, receiptMessageId, ROLLING_SUMMARY_RECEIPT);
+    } catch (error) {
+      console.warn('[rolling-summary] summary saved but receipt persistence failed', error);
+    }
     return { status: 'updated', summary, messageCount: source.unsummarizedMessages.length };
   } catch (error) {
-    appendRollingSummaryReceipt(conversationId, ROLLING_SUMMARY_FAILURE_RECEIPT);
+    try {
+      await appendRollingSummaryReceipt(conversationId, receiptMessageId, ROLLING_SUMMARY_FAILURE_RECEIPT);
+    } catch (receiptError) {
+      console.warn('[rolling-summary] failure receipt persistence failed', receiptError);
+    }
     throw error;
   } finally {
     runningConversationIds.delete(conversationId);

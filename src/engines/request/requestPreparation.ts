@@ -48,21 +48,21 @@ import {
 } from './requestPreparationAudit';
 import type { RequestMessage } from './requestMessage';
 
-const DEFAULT_CONTEXT_MESSAGE_LIMIT = Number.MAX_SAFE_INTEGER;
+const DEFAULT_CONTEXT_MESSAGE_LIMIT = 200;
 const UNBOUNDED_CONTEXT_TOKEN_BUDGET = Number.MAX_SAFE_INTEGER;
 const REQUEST_IMAGE_MAX_EDGE = 1280;
 const REQUEST_IMAGE_SOFT_TARGET_BYTES = 320 * 1024;
 const REQUEST_IMAGE_EXPORT_QUALITY_STEPS = [0.82, 0.72, 0.62, 0.52, 0.42] as const;
 const REQUEST_IMAGE_HYDRATION_MAX_USER_TURNS = 2;
 const REQUEST_IMAGE_DIRECT_KEEP_MIME_TYPES = new Set(['image/jpeg', 'image/webp']);
-const MINIMUM_RAW_CONTEXT_MESSAGE_COUNT = 300;
+const MAXIMUM_RAW_CONTEXT_MESSAGE_COUNT = 200;
 
 export type RequestImageUnderstandingResult = {
   messageId: string;
   attachmentId: string;
   textContent: string;
 };
-function parseContextLimit(input: string | undefined): number {
+export function resolveContextMessageLimit(input: string | undefined): number {
   const trimmed = input?.trim();
   if (!trimmed) return DEFAULT_CONTEXT_MESSAGE_LIMIT;
 
@@ -71,17 +71,7 @@ function parseContextLimit(input: string | undefined): number {
     return DEFAULT_CONTEXT_MESSAGE_LIMIT;
   }
 
-  return Math.floor(limit);
-}
-
-export function resolveMessagesAfterRollingSummary(
-  messages: ChatMessage[],
-  rollingSummary?: ConversationRollingSummary | null
-) {
-  const throughMessageId = rollingSummary?.throughMessageId;
-  if (!throughMessageId) return messages;
-  const throughIndex = messages.findIndex((message) => message.id === throughMessageId);
-  return throughIndex >= 0 ? messages.slice(throughIndex + 1) : messages;
+  return Math.min(MAXIMUM_RAW_CONTEXT_MESSAGE_COUNT, Math.floor(limit));
 }
 
 function formatRollingSummaryForRequest(summary?: ConversationRollingSummary | null) {
@@ -552,10 +542,7 @@ export async function prepareCollaboratorReplyRequest(params: {
         messages,
         results: []
       };
-  const requestSourceMessages = resolveMessagesAfterRollingSummary(
-    imageUnderstanding.messages,
-    params.rollingSummary
-  );
+  const requestSourceMessages = imageUnderstanding.messages;
   const assistantName = persona?.name || 'Assistant';
   const templateContext = buildTemplateContext({
     modelId,
@@ -582,10 +569,7 @@ export async function prepareCollaboratorReplyRequest(params: {
     messages: requestSourceMessages
   });
   const promptPartsMs = runtimeNow() - stepStartedAt;
-  const messageLimit = Math.max(
-    MINIMUM_RAW_CONTEXT_MESSAGE_COUNT,
-    parseContextLimit(preparedAdvanced?.contextMessageLimit)
-  );
+  const messageLimit = resolveContextMessageLimit(preparedAdvanced?.contextMessageLimit);
   const tokenBudget = resolveContextTokenBudget(providerCapabilities.budgets);
   const budgetPlan = resolveRequestBudgetPlan({
     messageLimit,

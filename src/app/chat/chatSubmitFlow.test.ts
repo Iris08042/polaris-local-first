@@ -19,6 +19,7 @@ describe('submitMessage', () => {
     const addMessage = vi.fn();
     const requestReply = vi.fn(() => Promise.resolve());
     const onUserMessageSubmitted = vi.fn();
+    const onUserTurnSettled = vi.fn(() => Promise.resolve());
 
     await submitMessage({
       inputDraft: '你好',
@@ -44,6 +45,7 @@ describe('submitMessage', () => {
       setCommandStatus: vi.fn(),
       submitToolCommand: vi.fn(() => Promise.resolve(false)),
       onUserMessageSubmitted,
+      onUserTurnSettled,
       requestReply
     });
 
@@ -59,6 +61,11 @@ describe('submitMessage', () => {
         content: '你好'
       })
     }));
+    expect(onUserTurnSettled).toHaveBeenCalledWith({
+      conversationId: 'conv-1',
+      replyResult: { status: 'completed' }
+    });
+    expect(requestReply.mock.invocationCallOrder[0]).toBeLessThan(onUserTurnSettled.mock.invocationCallOrder[0]);
   });
 
   it('allows sending a referenced card even when the visible draft is empty', async () => {

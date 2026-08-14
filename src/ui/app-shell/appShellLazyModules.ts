@@ -51,7 +51,3 @@ export const loadCollectionWorldModule = createCachedLoader(() =>
 export const loadChatWorldModule = createCachedLoader(() =>
   import('../worlds/ChatWorld')
 );
-
-export const loadGroupWorldModule = createCachedLoader(() =>
-  import('../worlds/GroupWorld')
-);

@@ -1,12 +1,10 @@
 import { useMenuSheetController } from '../../app/shell/useMenuSheetController';
-import { MEMORY_RELEASE_GATES } from '../../config/memoryReleaseGates';
 import type { MenuOverlayPage } from '../../app/shell/appShellContracts';
 import type { ThemeState } from '../../types/domain';
 import { MenuBackupPage } from './menu/MenuBackupPage';
 import { MenuGatewayPage } from './menu/MenuGatewayPage';
 import { MenuGenerationPage } from './menu/MenuGenerationPage';
 import { MenuMcpPage } from './menu/MenuMcpPage';
-import { MenuMemoryPage } from './menu/MenuMemoryPage';
 import { MenuAutomationPage } from './menu/MenuAutomationPage';
 import { MenuDocsPage } from './menu/MenuDocsPage';
 import { MenuDesktopLocalPage } from './menu/MenuDesktopLocalPage';
@@ -68,9 +66,7 @@ export function MenuSheet({
   });
   const visiblePage = controller.page === 'desktopLocal' && !controller.desktopLocalAvailable
     ? 'root'
-    : controller.page === 'memory' && !MEMORY_RELEASE_GATES.showGlobalConversationSummarySettings
-      ? 'root'
-      : controller.page;
+    : controller.page;
 
   useEffect(() => {
     if (open && closeOnBack && visiblePage === 'root') onClose();
@@ -116,12 +112,10 @@ export function MenuSheet({
             tokenUsageSummary={controller.tokenUsageSummary}
             customFontCount={controller.customFontCount}
             storageHealthSnapshot={controller.storageHealthSnapshot}
-            memorySettingsVisible={MEMORY_RELEASE_GATES.showGlobalConversationSummarySettings}
             desktopLocalAvailable={controller.desktopLocalAvailable}
             androidApkUpdateAvailable={controller.androidApkUpdateAvailable}
             onOpenDisplay={() => controller.onSetPage('display')}
             onOpenFonts={() => controller.onSetPage('fonts')}
-            onOpenMemory={() => controller.onSetPage('memory')}
             onOpenGeneration={() => controller.onSetPage('generation')}
             onOpenVoice={() => controller.onSetPage('voice')}
             onOpenToolbox={() => controller.onSetPage('toolbox')}
@@ -190,27 +184,15 @@ export function MenuSheet({
             search={controller.search}
             toolPromptPreferences={controller.toolPromptPreferences}
             desktopLocalAvailable={controller.desktopLocalAvailable}
-            memorySearchAvailable={controller.memorySearchAvailable}
             personalDataStatus={controller.personalDataStatus}
             taskModeEnabled={controller.taskModeEnabled}
             onBack={() => controller.onSetPage('root')}
-            onOpenMemorySettings={() => controller.onSetPage('memory')}
             onRefreshPersonalDataStatus={controller.onRefreshPersonalDataStatus}
             onRequestPersonalCalendarAccess={controller.onRequestPersonalCalendarAccess}
             onSetToolPromptGroupEnabled={controller.onSetToolPromptGroupEnabled}
             onSetThemeToolMode={controller.onSetThemeToolMode}
             onSetSearchConfig={controller.onSetSearchConfig}
             onSetTaskModeEnabled={controller.onSetTaskModeEnabled}
-          />
-        ) : null}
-        {visiblePage === 'memory' ? (
-          <MenuMemoryPage
-            conversationSummaryModel={controller.conversationSummaryModel}
-            memoryVectorRetrieval={controller.memoryVectorRetrieval}
-            providers={controller.providers}
-            onBack={() => controller.onSetPage('root')}
-            onSetConversationSummaryModel={controller.onSetConversationSummaryModel}
-            onSetMemoryVectorRetrieval={controller.onSetMemoryVectorRetrieval}
           />
         ) : null}
         {visiblePage === 'generation' ? (

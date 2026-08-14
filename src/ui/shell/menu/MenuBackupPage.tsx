@@ -101,7 +101,7 @@ export function MenuBackupPage({
         <div className="menu-section-head">
           <span className="menu-section-kicker">无尽夏完整云备份</span>
           <p className="menu-section-note">
-            每天第一次打开无尽夏时上传一份完整备份；当天不再重复上传。
+            每天你的第一条消息发送并落盘后上传一份完整备份；当天不再重复上传。
           </p>
         </div>
         <div className="menu-webdav-section">
@@ -112,7 +112,7 @@ export function MenuBackupPage({
                 checked={cloudBackupConfig.enabled}
                 onChange={(event) => onSetCloudBackupConfig({ enabled: event.target.checked })}
               />
-              每日首次打开时自动备份
+              每日第一条消息后自动备份
             </label>
             <label>云备份地址</label>
             <input

@@ -36,15 +36,6 @@ export type ChatState = {
       activeProjectId?: string | null;
     }
   ) => string;
-  createGroupConversation: (options: {
-    title?: string;
-    memberIds: string[];
-    lineageId?: string;
-  }) => string;
-  updateGroupConversation: (
-    conversationId: string,
-    patch: Partial<NonNullable<Conversation['group']>>
-  ) => void;
   addMessage: (target: WritableConversationBody, message: ChatMessage) => void;
   insertMessageBefore: (target: WritableConversationBody, beforeMessageId: string, message: ChatMessage) => void;
   insertMessageAfter: (target: WritableConversationBody, afterMessageId: string, message: ChatMessage) => void;

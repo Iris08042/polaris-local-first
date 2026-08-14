@@ -31,9 +31,9 @@ describe('menu backup transfer model', () => {
 
   it('keeps import and export native-file errors action-specific', () => {
     expect(formatMenuLocalBackupError(new Error('SystemFile not implemented on ios'), '导出'))
-      .toBe('当前 App 版暂时无法使用本地备份包，请先使用 WebDAV 导出备份包。');
+      .toBe('当前 App 版暂时无法导出本地备份包，请改用云端备份。');
     expect(formatMenuLocalBackupError(new Error('SystemFile not implemented on ios'), '导入'))
-      .toBe('当前 App 版暂时无法使用本地备份包，请先使用 WebDAV 导入备份包。');
+      .toBe('当前 App 版暂时无法导入本地备份包，请改用云端备份。');
   });
 
   it('keeps iOS read failures explicit during import', () => {

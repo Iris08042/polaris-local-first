@@ -77,9 +77,9 @@ describe('importMemoryReferenceDocFromFile', () => {
             ]
           })),
           cleanup
-        })),
-        destroy
-      })
+        }))
+      }),
+      destroy
     });
 
     const file = new File([new Uint8Array([1, 2, 3])], '棉花糖.pdf', { type: 'application/pdf' });
