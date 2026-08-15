@@ -1,4 +1,7 @@
-import type { Conversation } from '../types/domain';
+import {
+  normalizeConversationRollingSummary,
+  type Conversation
+} from '../types/domain';
 import { normalizeChatMessage } from '../engines/chatMessageNormalization';
 import {
   hydrateChatMigrationConversations,
@@ -58,7 +61,7 @@ function toConversation(
     toolLedger: rebuildConversationToolLedger(messages),
     workspaceLedger: record.workspaceLedger,
     task: record.task,
-    rollingSummary: record.rollingSummary ?? null,
+    rollingSummary: normalizeConversationRollingSummary(record.rollingSummary),
     draft: record.draft,
     pinnedAt: catalog.pinnedAt,
     updatedAt: catalog.updatedAt

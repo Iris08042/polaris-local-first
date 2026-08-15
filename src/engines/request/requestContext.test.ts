@@ -378,7 +378,7 @@ describe('assembleAssistantContext', () => {
       {
         role: 'system',
         cachePrefixEligible: true,
-        content: expect.stringContaining('[历史摘要，不是原文]')
+        content: expect.stringContaining('[记忆摘要，不是原文]')
       }
     ]);
     expect(historySummary?.messages[0]?.content).toContain('原因：message limit');

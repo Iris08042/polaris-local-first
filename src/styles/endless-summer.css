@@ -485,7 +485,24 @@
   white-space: nowrap;
 }
 
-.es-rolling-sheet > div:last-child {
+.es-rolling-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.es-rolling-sheet header button,
+.es-rolling-editor-actions button {
+  border: 1px solid rgba(151, 98, 114, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #8f5366;
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+.es-rolling-sheet > .has-summary,
+.es-rolling-sheet > .is-empty {
   min-height: 180px;
   padding-top: 18px;
   color: #393332;
@@ -496,6 +513,64 @@
 
 .es-rolling-sheet > .is-empty {
   color: rgba(73, 65, 63, 0.46);
+}
+
+.es-rolling-editor {
+  padding-top: 18px;
+}
+
+.es-rolling-editor textarea {
+  display: block;
+  width: 100%;
+  min-height: 260px;
+  resize: vertical;
+  border: 1px solid rgba(151, 98, 114, 0.18);
+  border-radius: 18px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.58);
+  color: #393332;
+  padding: 15px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.es-rolling-editor textarea:focus {
+  border-color: rgba(151, 98, 114, 0.48);
+  box-shadow: 0 0 0 3px rgba(183, 106, 131, 0.08);
+}
+
+.es-rolling-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.es-rolling-editor-actions button:last-child {
+  background: rgba(159, 88, 111, 0.9);
+  color: #fff;
+}
+
+.es-rolling-instruction details {
+  padding-top: 18px;
+}
+
+.es-rolling-instruction summary {
+  cursor: pointer;
+  color: #8f5366;
+  font-size: 13px;
+}
+
+.es-rolling-instruction pre {
+  margin: 14px 0 0;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: rgba(57, 51, 50, 0.8);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.65;
 }
 
 .es-rolling-stats {

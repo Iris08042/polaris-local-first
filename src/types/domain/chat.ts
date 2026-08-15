@@ -42,11 +42,21 @@ export interface ChatMessage {
   activityReceipts?: string[];
 }
 
+export const CONVERSATION_MEMORY_SUMMARY_VERSION = 2;
+
 export type ConversationRollingSummary = {
+  version?: number;
   content: string;
   throughMessageId: string;
   updatedAt: number;
+  instruction?: string;
 };
+
+export function normalizeConversationRollingSummary(
+  summary: ConversationRollingSummary | null | undefined
+): ConversationRollingSummary | null {
+  return summary?.version === CONVERSATION_MEMORY_SUMMARY_VERSION ? summary : null;
+}
 
 export type ChatTokenUsage = {
   totalTokens?: number;

@@ -1,4 +1,8 @@
-import type { ChatMessage, Conversation } from '../../types/domain';
+import {
+  normalizeConversationRollingSummary,
+  type ChatMessage,
+  type Conversation
+} from '../../types/domain';
 import { normalizeChatMessage } from '../../engines/chatMessageNormalization';
 import {
   getChatDomainMetaLocalDataRef,
@@ -288,7 +292,7 @@ function toConversation(catalog: ConversationCatalogRow, record: ConversationRec
     toolLedger: rebuildConversationToolLedger(messages),
     workspaceLedger: record.workspaceLedger,
     task: record.task,
-    rollingSummary: record.rollingSummary ?? null,
+    rollingSummary: normalizeConversationRollingSummary(record.rollingSummary),
     draft: record.draft,
     pinnedAt: catalog.pinnedAt,
     updatedAt: catalog.updatedAt

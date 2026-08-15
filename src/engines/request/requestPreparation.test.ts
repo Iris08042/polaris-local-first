@@ -510,6 +510,7 @@ describe('prepareCollaboratorReplyRequest semantic recall', () => {
         createUserMessage('fresh-user', '摘要之后的新问题', 3)
       ],
       rollingSummary: {
+        version: 2,
         content: '此前已经讨论完旧问题，现在准备继续。',
         throughMessageId: 'old-assistant',
         updatedAt: 3
@@ -519,7 +520,7 @@ describe('prepareCollaboratorReplyRequest semantic recall', () => {
 
     expect(prepared.conversation.map((message) => message.id)).toEqual(['old-user', 'old-assistant', 'fresh-user']);
     expect(historySummary?.messages[0]?.content).toContain('此前已经讨论完旧问题');
-    expect(historySummary?.messages[0]?.content).toContain('以原始对话为准');
+    expect(historySummary?.messages[0]?.content).toContain('以更新、更明确的原始对话为准');
   });
 });
 

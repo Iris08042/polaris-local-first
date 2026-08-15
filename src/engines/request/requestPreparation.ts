@@ -30,6 +30,7 @@ import {
   resolveProviderRuntimeContextTokenBudget,
   type CanonicalProviderCapabilitySet
 } from '../provider-runtime';
+import { normalizeConversationRollingSummary } from '../../types/domain';
 import type {
   ChatMessage,
   Conversation,
@@ -75,11 +76,11 @@ export function resolveContextMessageLimit(input: string | undefined): number {
 }
 
 function formatRollingSummaryForRequest(summary?: ConversationRollingSummary | null) {
-  const content = summary?.content.trim();
+  const content = normalizeConversationRollingSummary(summary)?.content.trim();
   if (!content) return [];
   return [
     [
-      '滚动摘要（只用于自然衔接当前聊天，不要机械复述，也不要把临时状态当成固定人格；若与后面的原始对话冲突，以原始对话为准）：',
+      '记忆摘要（用于理解长期背景与稳定关系；不要机械复述。若与后面的原始对话冲突，以更新、更明确的原始对话为准）：',
       content
     ].join('\n')
   ];

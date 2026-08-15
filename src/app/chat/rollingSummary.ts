@@ -4,14 +4,73 @@ import type { AssistantRequestContext } from '../../engines/request/requestConte
 import { useChatStore } from '../../stores/chatStore';
 import { usePersonaStore } from '../../stores/personaStore';
 import { selectRuntimeApi, selectVisibleProviders, useRuntimeStore } from '../../stores/runtimeStore';
-import type { ChatMessage, Conversation, ConversationRollingSummary, Persona } from '../../types/domain';
+import {
+  CONVERSATION_MEMORY_SUMMARY_VERSION,
+  normalizeConversationRollingSummary,
+  type ChatMessage,
+  type Conversation,
+  type ConversationRollingSummary,
+  type Persona
+} from '../../types/domain';
 
 export const ROLLING_SUMMARY_TRIGGER_MESSAGE_COUNT = 50;
 export const ROLLING_SUMMARY_RAW_CONTEXT_MESSAGE_COUNT = 200;
 const ROLLING_SUMMARY_MAX_OUTPUT_TOKENS = '1600';
-const ROLLING_SUMMARY_RECEIPT = '滚动摘要已更新';
-const ROLLING_SUMMARY_FAILURE_RECEIPT = '滚动摘要更新失败';
+const ROLLING_SUMMARY_RECEIPT = '记忆摘要已更新';
+const ROLLING_SUMMARY_FAILURE_RECEIPT = '记忆摘要更新失败';
 const runningConversationIds = new Set<string>();
+
+export const DEFAULT_MEMORY_SUMMARY_INSTRUCTION = `你负责维护一份“记忆摘要”，供后续对话理解长期背景与稳定关系使用。
+
+输入包括：
+1. 当前记忆摘要。它可能经过用户手动编辑，应视为权威底稿。
+2. 本次新增的真实对话。
+
+请将新增对话中长期有效的信息融入当前摘要，输出更新后的完整摘要，而不是修改说明或新增内容列表。
+
+【应当保留】
+- 明确表达、反复出现或经过长期交流确认的偏好、习惯、边界与雷区。
+- 长期项目、持续目标、重要关注方向及仍然有效的计划。
+- 对未来交流持续有帮助的个人背景、能力、需求与交流偏好。
+- 双方稳定的相处方式、长期约定及已经明确形成的关系变化。
+- 尚未结束、未来仍会继续影响对话的重要事项。
+- 一次事件背后已经明确表现出的长期意义，但不要保留事件流水本身。
+
+【不应保留】
+- 今天或昨天发生了什么之类的日常流水。
+- 天气、通勤、吃饭、睡觉、临时位置、即时安排等短期状态。
+- 已经结束且不会持续影响未来交流的一次性事件。
+- 单次情绪、随口表达、偶然偏好或未经确认的推测。
+- 对用户或角色进行心理诊断、人格定型或过度概括。
+- 聊天过程、逐句复述、工作日志和技术操作记录。
+- 人物的基础角色设定、固定身份说明以及系统提示词本身。
+- 模型自行提出但用户没有表达过的建议、目标和结论。
+
+【更新原则】
+- 当前摘要中已有且仍然有效的内容，应继续保留；不要因为本批对话没有再次提及就删除。
+- 用户对摘要的手动编辑优先级最高。不要擅自恢复被用户删除的旧内容。
+- 只有新增对话明确表明情况已经改变时，才修改或删除旧信息。
+- 新旧信息冲突时，以更新、更明确、由用户直接表达的信息为准。
+- 不要把临时状态提升为长期事实。
+- 如果新增对话没有提供值得长期保留的信息，保持当前摘要不变，不要为了显得有更新而改写措辞。
+- 合并重复内容，删除已经明确失效的内容，避免摘要无限膨胀。
+
+【组织与表达】
+- 根据实际内容自行组织简短小标题。
+- 小标题不是固定栏目，可以随内容变化自由新增、删除、合并、拆分或改名。
+- 不要为了维持版式而创建空栏目；内容较少时可以不使用小标题。
+- 使用清晰、自然、克制的中文，保持高信息密度。
+- 优先记录稳定性质和长期意义，不写成故事、日记或时间线。
+- 尽量控制在 1600 个汉字以内；信息较少时应明显更短。
+- 只输出更新后的摘要正文，不输出分析过程、修改说明、前言、JSON 或代码块。`;
+
+export function resolveMemorySummary(summary: ConversationRollingSummary | null | undefined) {
+  return normalizeConversationRollingSummary(summary);
+}
+
+export function resolveMemorySummaryInstruction(summary: ConversationRollingSummary | null | undefined) {
+  return resolveMemorySummary(summary)?.instruction?.trim() || DEFAULT_MEMORY_SUMMARY_INSTRUCTION;
+}
 
 async function appendRollingSummaryReceipt(conversationId: string, messageId: string | null, receipt: string) {
   if (!messageId) return;
@@ -44,14 +103,22 @@ export function isRollingSummarySourceMessage(message: ChatMessage) {
 export function resolveRollingSummarySource(conversation: Pick<Conversation, 'messages' | 'rollingSummary'>) {
   const visibleMessages = conversation.messages.filter(isRollingSummarySourceMessage);
   const rawBufferStart = Math.max(0, visibleMessages.length - ROLLING_SUMMARY_RAW_CONTEXT_MESSAGE_COUNT);
-  const immutableMessages = visibleMessages.slice(0, rawBufferStart);
-  const throughMessageId = conversation.rollingSummary?.throughMessageId;
-  const previousIndex = throughMessageId
-    ? immutableMessages.findIndex((message) => message.id === throughMessageId)
+  const editableTurnReverseOffset = [...visibleMessages]
+    .reverse()
+    .findIndex((message) => message.role === 'user');
+  const editableTurnStart = editableTurnReverseOffset >= 0
+    ? visibleMessages.length - editableTurnReverseOffset - 1
     : -1;
-  const unsummarizedMessages = immutableMessages.slice(previousIndex + 1);
+  const stableMessages = editableTurnStart >= 0
+    ? visibleMessages.slice(0, editableTurnStart)
+    : visibleMessages;
+  const summary = resolveMemorySummary(conversation.rollingSummary);
+  const throughMessageId = summary?.throughMessageId;
+  const previousIndex = throughMessageId
+    ? stableMessages.findIndex((message) => message.id === throughMessageId)
+    : -1;
+  const unsummarizedMessages = stableMessages.slice(previousIndex + 1);
   return {
-    immutableMessages,
     unsummarizedMessages,
     latestEligibleMessage: unsummarizedMessages[unsummarizedMessages.length - 1] ?? null,
     bufferedMessages: visibleMessages.slice(rawBufferStart)
@@ -76,7 +143,8 @@ export function buildRollingSummaryContext(args: {
   previousSummary?: ConversationRollingSummary | null;
   messages: ChatMessage[];
 }): AssistantRequestContext {
-  const previous = args.previousSummary?.content.trim();
+  const previousSummary = resolveMemorySummary(args.previousSummary);
+  const previous = previousSummary?.content.trim();
   return {
     memorySlots: { session: [], profile: [], pin: [] },
     attachmentSlots: { enabled: false, pending: [] },
@@ -86,12 +154,7 @@ export function buildRollingSummaryContext(args: {
         kind: 'system',
         messages: [{
           role: 'system',
-          content: [
-            '把旧滚动摘要与新增对话融合成一份新的滚动摘要。',
-            '它只负责让下一轮自然接上当前聊天：保留近期事件、正在进行的话题、未完成事项、双方当下态度和已经发生的转折。',
-            '不要写角色设定，不要把临时情绪固化成人格，不要补充来源里没有的事实，不要逐句复述。',
-            '直接输出简洁中文正文，不要标题、列表说明、JSON 或分析过程。'
-          ].join('\n')
+          content: resolveMemorySummaryInstruction(previousSummary)
         }]
       },
       {
@@ -99,9 +162,9 @@ export function buildRollingSummaryContext(args: {
         messages: [{
           role: 'user',
           content: [
-            previous ? `旧滚动摘要：\n${previous}` : '旧滚动摘要：（尚无）',
+            previous ? `当前记忆摘要：\n${previous}` : '当前记忆摘要：（尚无）',
             '',
-            '新增且已经不可编辑的对话：',
+            '本次新增的真实对话：',
             formatSourceMessages(args.messages, args.persona)
           ].join('\n')
         }]
@@ -143,7 +206,7 @@ export async function updateRollingSummaryForConversation(
       api: providerBinding.api,
       context: buildRollingSummaryContext({
         persona,
-        previousSummary: conversation.rollingSummary,
+        previousSummary: resolveMemorySummary(conversation.rollingSummary),
         messages: source.unsummarizedMessages
       }),
       advanced: {
@@ -163,19 +226,22 @@ export async function updateRollingSummaryForConversation(
       sessionId: conversationId
     });
     const content = reply.content.trim();
-    if (!content) throw new Error('滚动摘要模型返回了空内容');
+    if (!content) throw new Error('记忆摘要模型返回了空内容');
+    const previousSummary = resolveMemorySummary(conversation.rollingSummary);
     const summary = {
+      version: CONVERSATION_MEMORY_SUMMARY_VERSION,
       content,
       throughMessageId: source.latestEligibleMessage.id,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      instruction: resolveMemorySummaryInstruction(previousSummary)
     } satisfies ConversationRollingSummary;
     const chat = useChatStore.getState();
-    const previousSummary = conversation.rollingSummary;
+    const storedPreviousSummary = conversation.rollingSummary;
     chat.setConversationRollingSummary(conversationId, summary);
     try {
       await chat.persistToDb();
     } catch (error) {
-      useChatStore.getState().setConversationRollingSummary(conversationId, previousSummary);
+      useChatStore.getState().setConversationRollingSummary(conversationId, storedPreviousSummary);
       throw error;
     }
     try {

@@ -262,8 +262,8 @@ export function assembleAssistantContext(params: AssembleAssistantContextParams)
           {
             role: 'system' as const,
             content: [
-              '[历史摘要，不是原文]',
-              '以下内容是当前聊天的滚动摘要，只用来保持自然衔接；不要当成用户或助手的逐字原话。',
+              '[记忆摘要，不是原文]',
+              '以下内容用于理解长期背景与稳定关系；不要当成用户或助手的逐字原话，也不要用它覆盖后面更新、更明确的原始对话。',
               ...historySummaryLines
             ].join('\n'),
             cachePrefixEligible: true

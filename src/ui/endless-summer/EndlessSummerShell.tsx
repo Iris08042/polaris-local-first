@@ -244,7 +244,7 @@ function MemoryPage({ onOpenOmbre, onOpenRolling }: { onOpenOmbre: () => void; o
         <span><strong>长期记忆</strong><em>Ombre Brain</em><small><i />浏览、搜索与整理长期记忆</small></span><b>›</b>
       </button>
       <button type="button" className="es-ob-card es-rolling-card" onClick={onOpenRolling}>
-        <span><strong>滚动摘要</strong><em>Rolling Summary</em><small>最近这段聊天的连续上下文</small></span><b>›</b>
+        <span><strong>记忆摘要</strong><em>Memory Summary</em><small>长期稳定的理解与相处脉络</small></span><b>›</b>
       </button>
     </section>
   );

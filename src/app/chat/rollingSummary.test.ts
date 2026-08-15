@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { resolveRollingSummaryReceiptMessageId, resolveRollingSummarySource } from './rollingSummary';
+import {
+  DEFAULT_MEMORY_SUMMARY_INSTRUCTION,
+  resolveMemorySummary,
+  resolveRollingSummaryReceiptMessageId,
+  resolveRollingSummarySource
+} from './rollingSummary';
 import type { ChatMessage } from '../../types/domain';
 
 function message(id: string, role: 'user' | 'assistant', content = id): ChatMessage {
@@ -13,13 +18,13 @@ function conversationMessages(count: number) {
 }
 
 describe('resolveRollingSummarySource', () => {
-  it('always keeps the latest 200 real messages outside the summary', () => {
+  it('keeps the latest 200 real messages as raw context while all new messages can inform the memory summary', () => {
     const messages = conversationMessages(202);
     const source = resolveRollingSummarySource({
       messages,
       rollingSummary: null
     });
-    expect(source.unsummarizedMessages.map(item => item.id)).toEqual(['m0', 'm1']);
+    expect(source.unsummarizedMessages).toHaveLength(200);
     expect(source.bufferedMessages).toHaveLength(200);
     expect(source.bufferedMessages[0]?.id).toBe('m2');
   });
@@ -28,9 +33,10 @@ describe('resolveRollingSummarySource', () => {
     const messages = conversationMessages(204);
     const source = resolveRollingSummarySource({
       messages,
-      rollingSummary: { content: '旧摘要', throughMessageId: 'm1', updatedAt: 1 }
+      rollingSummary: { version: 2, content: '旧摘要', throughMessageId: 'm1', updatedAt: 1 }
     });
-    expect(source.unsummarizedMessages.map(item => item.id)).toEqual(['m2', 'm3']);
+    expect(source.unsummarizedMessages[0]?.id).toBe('m2');
+    expect(source.unsummarizedMessages).toHaveLength(200);
     expect(source.bufferedMessages).toHaveLength(200);
   });
 
@@ -41,7 +47,7 @@ describe('resolveRollingSummarySource', () => {
       messages,
       rollingSummary: null
     });
-    expect(source.unsummarizedMessages.map(item => item.id)).toEqual(['m0', 'm1']);
+    expect(source.unsummarizedMessages).toHaveLength(200);
     expect(source.bufferedMessages).toHaveLength(200);
   });
 
@@ -59,7 +65,7 @@ describe('resolveRollingSummarySource', () => {
       }]
     };
     const source = resolveRollingSummarySource({ messages, rollingSummary: null });
-    expect(source.unsummarizedMessages.map(item => item.id)).toEqual(['m0', 'm1']);
+    expect(source.unsummarizedMessages).toHaveLength(200);
     expect(source.bufferedMessages).toHaveLength(200);
   });
 
@@ -70,23 +76,57 @@ describe('resolveRollingSummarySource', () => {
       nativeToolCalls: [{ id: 'call-1', name: 'hold', argumentsText: '{}' }]
     });
     const source = resolveRollingSummarySource({ messages, rollingSummary: null });
-    expect(source.unsummarizedMessages.map(item => item.id)).toEqual(['m0', 'm1']);
+    expect(source.unsummarizedMessages).toHaveLength(200);
     expect(source.bufferedMessages).toHaveLength(200);
   });
 
-  it('reaches the first automatic batch at 250 real messages', () => {
+  it('reaches the first automatic batch at 50 real messages', () => {
     const beforeThreshold = resolveRollingSummarySource({
-      messages: conversationMessages(249),
+      messages: conversationMessages(50),
       rollingSummary: null
     });
     const atThreshold = resolveRollingSummarySource({
-      messages: conversationMessages(250),
+      messages: conversationMessages(52),
       rollingSummary: null
     });
 
-    expect(beforeThreshold.unsummarizedMessages).toHaveLength(49);
+    expect(beforeThreshold.unsummarizedMessages).toHaveLength(48);
     expect(atThreshold.unsummarizedMessages).toHaveLength(50);
-    expect(atThreshold.bufferedMessages).toHaveLength(200);
+    expect(atThreshold.bufferedMessages).toHaveLength(52);
+  });
+
+  it('invalidates the old rolling-summary format so the incorrect existing summary is rebuilt', () => {
+    const legacySummary = { content: '今天堵车回家。', throughMessageId: 'm1', updatedAt: 1 };
+    const source = resolveRollingSummarySource({
+      messages: conversationMessages(3),
+      rollingSummary: legacySummary
+    });
+
+    expect(resolveMemorySummary(legacySummary)).toBeNull();
+    expect(source.unsummarizedMessages).toHaveLength(2);
+  });
+
+  it('keeps the current editable user and assistant turn out of the summary source', () => {
+    const first = resolveRollingSummarySource({
+      messages: conversationMessages(4),
+      rollingSummary: null
+    });
+    const afterNextTurn = resolveRollingSummarySource({
+      messages: conversationMessages(6),
+      rollingSummary: null
+    });
+
+    expect(first.unsummarizedMessages.map(item => item.id)).toEqual(['m0', 'm1']);
+    expect(afterNextTurn.unsummarizedMessages.map(item => item.id)).toEqual(['m0', 'm1', 'm2', 'm3']);
+  });
+});
+
+describe('memory summary instruction', () => {
+  it('selects durable understanding and excludes daily chronology without fixed sections', () => {
+    expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('长期背景与稳定关系');
+    expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('天气、通勤');
+    expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('小标题不是固定栏目');
+    expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('用户对摘要的手动编辑优先级最高');
   });
 });
 
