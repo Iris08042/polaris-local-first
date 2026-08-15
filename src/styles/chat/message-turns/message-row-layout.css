@@ -74,6 +74,17 @@
 .message-avatar {
   box-shadow: 0 10px 18px color-mix(in srgb, var(--accent-soft) 10%, transparent);
 }
+.message-timestamp {
+  margin-top: 3px;
+  padding: 0 8px;
+  color: color-mix(in srgb, var(--text-muted) 82%, transparent);
+  font-family: var(--font-ui);
+  font-size: var(--type-tiny);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+}
+.message-timestamp.assistant { align-self: flex-start; }
+.message-timestamp.user { align-self: flex-end; text-align: right; }
 .message-turn.assistant {
   width: min(100%, 780px);
   align-items: flex-start;

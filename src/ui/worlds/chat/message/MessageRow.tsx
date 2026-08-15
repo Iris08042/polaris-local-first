@@ -94,6 +94,25 @@ type MessageRowProps = {
   taskReceiptAction?: MessageTaskReceiptAction | null;
 };
 
+function formatMessageTimestamp(timestamp: number, language: string) {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const now = new Date();
+  const isToday = date.getFullYear() === now.getFullYear()
+    && date.getMonth() === now.getMonth()
+    && date.getDate() === now.getDate();
+  const label = new Intl.DateTimeFormat(language, isToday
+    ? { hour: '2-digit', minute: '2-digit' }
+    : { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+  ).format(date);
+
+  return {
+    label,
+    dateTime: date.toISOString()
+  };
+}
+
 function MessageRowComponent({
   message,
   resolvedCardReference,
@@ -118,7 +137,7 @@ function MessageRowComponent({
   isTerminalAssistantInUserTurn = true,
   taskReceiptAction = null
 }: MessageRowProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const isToolEvent = Boolean(message.toolInvocation);
   const isAssistantReply = message.role === 'assistant' && !isToolEvent;
   const isUserMessage = message.role === 'user' && !isToolEvent;
@@ -150,6 +169,7 @@ function MessageRowComponent({
   const showAssistantChatIdentity = showChatAvatars && !isAssistantContinuation;
   const assistantAvatarPx = resolveChatAvatarSize(assistantAvatarSize);
   const userAvatarPx = resolveChatAvatarSize(userAvatarSize);
+  const messageTimestamp = formatMessageTimestamp(message.timestamp, language);
   const [userActionMenuOpen, setUserActionMenuOpen] = useState(false);
   const longPressTimerRef = useRef<number | null>(null);
   const bubbleFrameRef = useRef<HTMLDivElement>(null);
@@ -462,6 +482,11 @@ function MessageRowComponent({
                 />
               ) : null}
               {messageBubble}
+              {messageTimestamp ? (
+                <time className="message-timestamp assistant" dateTime={messageTimestamp.dateTime}>
+                  {messageTimestamp.label}
+                </time>
+              ) : null}
               {message.activityReceipts?.length ? (
                 <div className="message-activity-receipts" role="status">
                   {message.activityReceipts.map((receipt) => <small key={receipt}>{receipt}</small>)}
@@ -494,6 +519,11 @@ function MessageRowComponent({
           <div className="message-turn-body user">
             <div className="message-turn-stack user">
               {messageBubble}
+              {messageTimestamp ? (
+                <time className="message-timestamp user" dateTime={messageTimestamp.dateTime}>
+                  {messageTimestamp.label}
+                </time>
+              ) : null}
               {messageActions}
             </div>
             {showChatAvatars ? (
