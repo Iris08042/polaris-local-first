@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { McpServerConfig } from '../../../types/domain';
+import { isManagedFarmMcpServer } from '../../../app/farm/managedFarmMcp';
 import { buildMcpHandle } from '../../../engines/mcpHandle';
 import { useI18n } from '../../../i18n/useI18n';
 import { Icon } from '../../Icon';
@@ -33,16 +34,24 @@ export function MenuMcpPage({
   const [creatingOpen, setCreatingOpen] = useState(false);
   const [jsonEditorOpen, setJsonEditorOpen] = useState(false);
   const [timeoutSheetOpen, setTimeoutSheetOpen] = useState(false);
+  const visibleServers = useMemo(
+    () => mcpServers.filter((server) => !isManagedFarmMcpServer(server)),
+    [mcpServers]
+  );
+  const managedServers = useMemo(
+    () => mcpServers.filter(isManagedFarmMcpServer),
+    [mcpServers]
+  );
 
   const sortedServers = useMemo(
-    () => [...mcpServers].sort((left, right) => {
+    () => [...visibleServers].sort((left, right) => {
       if (left.isActive !== right.isActive) return left.isActive ? -1 : 1;
       return left.name.localeCompare(right.name, language);
     }),
-    [language, mcpServers]
+    [language, visibleServers]
   );
-  const editingServer = mcpServers.find((server) => server.id === editingServerId) ?? null;
-  const enabledCount = mcpServers.filter((server) => server.isActive).length;
+  const editingServer = visibleServers.find((server) => server.id === editingServerId) ?? null;
+  const enabledCount = visibleServers.filter((server) => server.isActive).length;
 
   return (
     <div className="menu-sheet-page">
@@ -96,7 +105,7 @@ export function MenuMcpPage({
       <section className="menu-section">
         <div className="menu-section-head">
           <span className="menu-section-kicker">{t('settings.mcp.summarySection')}</span>
-          <p className="menu-section-note">{t('settings.mcp.summary', { enabled: enabledCount, total: mcpServers.length, seconds: timeoutSeconds })}</p>
+          <p className="menu-section-note">{t('settings.mcp.summary', { enabled: enabledCount, total: visibleServers.length, seconds: timeoutSeconds })}</p>
         </div>
         {sortedServers.length > 0 ? (
           <div className="mcp-server-list">
@@ -204,9 +213,9 @@ export function MenuMcpPage({
 
       <McpJsonEditorSheet
         open={jsonEditorOpen}
-        servers={mcpServers}
+        servers={visibleServers}
         onClose={() => setJsonEditorOpen(false)}
-        onSave={onSetServers}
+        onSave={(servers) => onSetServers([...servers, ...managedServers])}
       />
 
       <McpTimeoutSheet

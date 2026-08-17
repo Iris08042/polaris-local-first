@@ -1,4 +1,5 @@
 import type { McpServerConfig, Persona } from '../../types/domain';
+import { isManagedFarmMcpServer } from '../farm/managedFarmMcp';
 
 export function resolvePersonaMcpServers(args: {
   persona?: Persona | null;
@@ -10,6 +11,7 @@ export function resolvePersonaMcpServers(args: {
   }
 
   const selectedServerIds = new Set(persona.mcp.serverIds);
-  if (selectedServerIds.size === 0) return [];
-  return mcpServers.filter((server) => selectedServerIds.has(server.id));
+  return mcpServers.filter((server) => (
+    isManagedFarmMcpServer(server) || selectedServerIds.has(server.id)
+  ));
 }

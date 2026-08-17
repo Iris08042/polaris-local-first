@@ -61,4 +61,16 @@ describe('resolvePersonaMcpServers', () => {
 
     expect(resolvePersonaMcpServers({ persona, mcpServers: servers })).toEqual([]);
   });
+
+  it('keeps the product-managed farm available to a collaborator with a personal set', () => {
+    const persona = createPersonaTemplate({
+      id: 'persona-farm',
+      name: 'Farm',
+      description: '',
+      mcp: { inheritGlobal: false, serverIds: [] }
+    });
+    const farm = createServer('endless-summer-farm');
+
+    expect(resolvePersonaMcpServers({ persona, mcpServers: [...servers, farm] })).toEqual([farm]);
+  });
 });

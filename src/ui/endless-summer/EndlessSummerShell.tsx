@@ -15,9 +15,10 @@ import type { DesktopAppSidebarProps } from '../app-shell/DesktopAppSidebar';
 import { useAssetObjectUrl } from '../useAssetObjectUrl';
 import { OmbreMemoryPage } from './OmbreMemoryPage';
 import { RollingSummaryPage } from './RollingSummaryPage';
+import { FarmPage } from './FarmPage';
 
 type NavigationPage = 'chat' | 'memory' | 'home' | 'features' | 'settings';
-type PrimaryPage = NavigationPage | 'collection' | 'ombre' | 'rolling';
+type PrimaryPage = NavigationPage | 'collection' | 'ombre' | 'rolling' | 'games' | 'farm';
 type CollectionParentPage = 'features' | 'settings';
 type MobileConversationNavigation = Omit<DesktopAppSidebarProps, 'collapsed' | 'onToggleCollapsed'>;
 
@@ -253,8 +254,9 @@ function MemoryPage({ onOpenOmbre, onOpenRolling }: { onOpenOmbre: () => void; o
 
 function FeaturesPage({
   onOpenSettingsPage,
-  onOpenCollectionShelf
-}: Pick<EndlessSummerShellProps, 'onOpenSettingsPage' | 'onOpenCollectionShelf'>) {
+  onOpenCollectionShelf,
+  onOpenGames
+}: Pick<EndlessSummerShellProps, 'onOpenSettingsPage' | 'onOpenCollectionShelf'> & { onOpenGames: () => void }) {
   const heartbeat = useHeartbeatMode();
   return (
     <section className="es-page es-scroll-page">
@@ -269,8 +271,28 @@ function FeaturesPage({
         <HubCard icon="cardStack" title="收藏与资料" detail="图片、文件和卡片" onClick={() => onOpenCollectionShelf('project')} />
         <HubCard icon="mcpService" title="外部工具" detail="MCP 与扩展能力" onClick={() => onOpenSettingsPage('mcp')} />
       </div>
-      <h2 className="es-future-title">以后一起玩</h2>
-      <HubCard icon="task" title="小游戏" detail="慢慢把喜欢的搬进来" disabled className="es-future-card" />
+      <h2 className="es-future-title">一起玩</h2>
+      <HubCard icon="task" title="小游戏" detail="农场已经搬进来了" onClick={onOpenGames} className="es-future-card" />
+    </section>
+  );
+}
+
+function GamesPage({ onBack, onOpenFarm }: { onBack: () => void; onOpenFarm: () => void }) {
+  return (
+    <section className="es-games-page">
+      <header className="es-collection-header">
+        <button type="button" onClick={onBack} aria-label="返回功能">‹</button>
+        <div><h1>小游戏</h1><p>把喜欢的世界慢慢搬进来</p></div>
+        <Flower />
+      </header>
+      <div className="es-games-list">
+        <button type="button" className="es-game-card" onClick={onOpenFarm}>
+          <span className="es-game-card-icon"><Icon name="sun" size={34} /></span>
+          <span><strong>我们的农场</strong><small>一起播种、照看和收获</small><em>已接入</em></span>
+          <b>›</b>
+        </button>
+        <p>现在只有这一座农场。以后有新游戏，也会从这里进入。</p>
+      </div>
     </section>
   );
 }
@@ -495,7 +517,9 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
   };
   const selectedNavPage: NavigationPage = page === 'collection'
     ? collectionParentPage
-    : page === 'ombre' || page === 'rolling' ? 'memory' : page;
+    : page === 'ombre' || page === 'rolling'
+      ? 'memory'
+      : page === 'games' || page === 'farm' ? 'features' : page;
 
   return (
     <div className={`es-shell es-page-${selectedNavPage}`}>
@@ -516,7 +540,9 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
       {page === 'memory' ? <MemoryPage onOpenOmbre={() => setPage('ombre')} onOpenRolling={() => setPage('rolling')} /> : null}
       {page === 'ombre' ? <OmbreMemoryPage onBack={() => setPage('memory')} /> : null}
       {page === 'rolling' ? <RollingSummaryPage onBack={() => setPage('memory')} /> : null}
-      {page === 'features' ? <FeaturesPage onOpenSettingsPage={props.onOpenSettingsPage} onOpenCollectionShelf={(shelf) => openCollectionShelf(shelf, 'features')} /> : null}
+      {page === 'features' ? <FeaturesPage onOpenSettingsPage={props.onOpenSettingsPage} onOpenCollectionShelf={(shelf) => openCollectionShelf(shelf, 'features')} onOpenGames={() => setPage('games')} /> : null}
+      {page === 'games' ? <GamesPage onBack={() => setPage('features')} onOpenFarm={() => setPage('farm')} /> : null}
+      {page === 'farm' ? <FarmPage onBack={() => setPage('games')} onOpenAutomation={() => props.onOpenSettingsPage('automation')} /> : null}
       {page === 'settings' ? <SettingsPage collaboratorName={props.collaboratorName} customization={props.customization} setCustomization={props.setCustomization} onChooseImage={chooseImage} onOpenCollectionShelf={(shelf) => openCollectionShelf(shelf, 'settings')} onOpenSettingsPage={props.onOpenSettingsPage} onOpenProviderSettings={props.onOpenProviderSettings} /> : null}
       {uploadError ? <p className="es-upload-error" role="alert">{uploadError}</p> : null}
       <nav className="es-primary-nav" aria-label="一级导航">

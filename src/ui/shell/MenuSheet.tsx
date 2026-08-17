@@ -5,6 +5,7 @@ import { MenuBackupPage } from './menu/MenuBackupPage';
 import { MenuGatewayPage } from './menu/MenuGatewayPage';
 import { MenuGenerationPage } from './menu/MenuGenerationPage';
 import { MenuMcpPage } from './menu/MenuMcpPage';
+import { isManagedFarmMcpServer } from '../../app/farm/managedFarmMcp';
 import { MenuAutomationPage } from './menu/MenuAutomationPage';
 import { MenuDocsPage } from './menu/MenuDocsPage';
 import { MenuDesktopLocalPage } from './menu/MenuDesktopLocalPage';
@@ -107,8 +108,8 @@ export function MenuSheet({
         {visiblePage === 'root' ? (
           <MenuRootPage
             enabledToolGroupsCount={controller.enabledToolGroupsCount}
-            enabledMcpServerCount={controller.mcpServers.filter((server) => server.isActive).length}
-            mcpServerCount={controller.mcpServers.length}
+            enabledMcpServerCount={controller.mcpServers.filter((server) => server.isActive && !isManagedFarmMcpServer(server)).length}
+            mcpServerCount={controller.mcpServers.filter((server) => !isManagedFarmMcpServer(server)).length}
             tokenUsageSummary={controller.tokenUsageSummary}
             customFontCount={controller.customFontCount}
             storageHealthSnapshot={controller.storageHealthSnapshot}
