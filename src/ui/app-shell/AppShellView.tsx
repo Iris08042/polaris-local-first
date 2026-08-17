@@ -146,6 +146,7 @@ export function AppShellView({
       ) : (
         <EndlessSummerShell
           activeWorld={activeWorld}
+          startupReady={startupThemeReady}
           worldStack={worldStack}
           conversations={desktopSidebarProps}
           collaboratorName={endlessSummer.collaboratorName}

@@ -23,6 +23,7 @@ type MobileConversationNavigation = Omit<DesktopAppSidebarProps, 'collapsed' | '
 
 export type EndlessSummerShellProps = {
   activeWorld: World;
+  startupReady: boolean;
   worldStack: ReactNode;
   conversations: MobileConversationNavigation;
   collaboratorName: string;
@@ -457,12 +458,20 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previousWorldRef = useRef(props.activeWorld);
+  const previousStartupReadyRef = useRef(props.startupReady);
 
   useEffect(() => {
-    if (previousWorldRef.current === props.activeWorld) return;
+    const worldChanged = previousWorldRef.current !== props.activeWorld;
+    const startupBecameReady = props.startupReady && !previousStartupReadyRef.current;
     previousWorldRef.current = props.activeWorld;
-    setPage(props.activeWorld === 'collection' ? 'collection' : 'chat');
-  }, [props.activeWorld]);
+    previousStartupReadyRef.current = props.startupReady;
+    if (!props.startupReady) return;
+    if (startupBecameReady) {
+      setPage('home');
+      return;
+    }
+    if (worldChanged) setPage(props.activeWorld === 'collection' ? 'collection' : 'chat');
+  }, [props.activeWorld, props.startupReady]);
 
   const chooseImage = () => fileInputRef.current?.click();
   const importImage = async (file: File | undefined) => {

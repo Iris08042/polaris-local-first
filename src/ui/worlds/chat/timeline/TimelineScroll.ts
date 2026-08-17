@@ -266,16 +266,11 @@ export function useTimelineScroll({
     const latestUserMessageId = getLatestUserMessageId(messages);
     previousLatestMessageIdRef.current = latestMessageId;
     previousLatestUserMessageIdRef.current = latestUserMessageId;
-    const nextSnapshot = readConversationScrollSnapshot(conversationId);
-    const nextFollowMode = nextSnapshot?.followMode ?? 'bottom';
-    setFollowMode(nextFollowMode);
+    if (conversationId) conversationScrollSnapshots.delete(conversationId);
+    setFollowMode('bottom');
     setShowJumpToLatest(false);
     setShowJumpToTop(false);
     if (!isActiveWorld) return;
-    if (nextSnapshot) {
-      restoreConversationScroll(nextSnapshot, latestUserMessageId);
-      return;
-    }
     scrollToBottom('auto');
   }, [conversationId, isActiveWorld, isWorldSettled]);
 
