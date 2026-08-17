@@ -13,10 +13,11 @@ type UseMenuGatewayControllerArgs = {
 
 export function buildGatewayPresetPatch(api: ProviderProfile): Partial<ProviderProfile> {
   return {
-    name: `${api.name} 中转`,
-    baseUrl: 'https://api.siliconflow.cn/v1',
-    path: '/chat/completions',
-    apiKey: '',
+    name: `${api.name} · 无尽夏 Gateway`,
+    protocol: api.protocol,
+    baseUrl: api.baseUrl,
+    path: api.path,
+    apiKey: api.apiKey,
     model: api.model
   };
 }

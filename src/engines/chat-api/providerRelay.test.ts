@@ -4,6 +4,8 @@ import {
   hasProviderRelayAuthHeader,
   isAllowedProviderRelayTarget,
   isProviderModelListRelayTarget,
+  resolveProviderRelayPath,
+  shouldRouteThroughEndlessSummerGateway,
   sanitizeProviderRelayHeaders
 } from './providerRelay';
 
@@ -47,6 +49,47 @@ describe('canFallbackThroughProviderRelay', () => {
 
   it('keeps private targets outside the relay fallback boundary', () => {
     expect(canFallbackThroughProviderRelay('https://127.0.0.1/v1/chat/completions')).toBe(false);
+  });
+});
+
+describe('Endless Summer gateway routing', () => {
+  beforeEach(() => {
+    nativePlatform.value = false;
+  });
+
+  it('routes every external provider through the self-hosted gateway on the PWA', () => {
+    vi.stubGlobal('window', {
+      location: { origin: 'https://polaris.yichen888.top' }
+    });
+
+    expect(shouldRouteThroughEndlessSummerGateway('https://api.openai.com/v1/chat/completions')).toBe(true);
+    expect(shouldRouteThroughEndlessSummerGateway('https://api.dzzi.ai/v1/chat/completions')).toBe(true);
+    expect(shouldRouteThroughEndlessSummerGateway(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent'
+    )).toBe(true);
+    expect(resolveProviderRelayPath()).toBe('/gateway/api/provider-relay');
+  });
+
+  it('does not wrap same-origin, private, preview, or native requests', () => {
+    vi.stubGlobal('window', {
+      location: { origin: 'https://polaris.yichen888.top' }
+    });
+    expect(shouldRouteThroughEndlessSummerGateway(
+      'https://polaris.yichen888.top/gateway/v1/chat/completions'
+    )).toBe(false);
+    expect(shouldRouteThroughEndlessSummerGateway('https://127.0.0.1/v1/chat/completions')).toBe(false);
+
+    vi.stubGlobal('window', {
+      location: { origin: 'https://polaris-preview.example.com' }
+    });
+    expect(shouldRouteThroughEndlessSummerGateway('https://api.openai.com/v1/chat/completions')).toBe(false);
+    expect(resolveProviderRelayPath()).toBe('/api/provider-relay');
+
+    nativePlatform.value = true;
+    vi.stubGlobal('window', {
+      location: { origin: 'https://polaris.yichen888.top' }
+    });
+    expect(shouldRouteThroughEndlessSummerGateway('https://api.openai.com/v1/chat/completions')).toBe(false);
   });
 });
 

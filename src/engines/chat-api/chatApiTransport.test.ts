@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BuiltRequest } from './chatApiTypes';
-import { executeBuiltRequest } from './chatApiTransport';
+import { executeBuiltRequest, resolveRequestTransportPath } from './chatApiTransport';
 import { createProviderRuntimeTestProvider } from '../provider-runtime/providerRuntimeFixtures';
 
 const originalFetch = globalThis.fetch;
@@ -48,6 +48,25 @@ describe('executeBuiltRequest non-stream responses', () => {
   afterEach(() => {
     globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('uses the self-hosted gateway for external providers on the Endless Summer PWA', () => {
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'https://polaris.yichen888.top',
+        protocol: 'https:'
+      }
+    });
+
+    expect(resolveRequestTransportPath({
+      api: createProviderRuntimeTestProvider(),
+      request: createNonStreamRequest()
+    })).toMatchObject({
+      endpoint: 'https://polaris.yichen888.top/gateway/api/provider-relay',
+      shouldUseRelay: true,
+      path: 'non-stream'
+    });
   });
 
   it('accepts plain text non-stream replies when no native tools were requested', async () => {

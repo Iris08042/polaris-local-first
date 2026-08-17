@@ -26,11 +26,12 @@ function buildProvider(patch: Partial<ProviderProfile> = {}): ProviderProfile {
 
 describe('menu gateway controller model', () => {
   it('builds the gateway preset without changing the selected model', () => {
-    expect(buildGatewayPresetPatch(buildProvider({ name: 'Main', model: 'qwen-plus' }))).toEqual({
-      name: 'Main 中转',
-      baseUrl: 'https://api.siliconflow.cn/v1',
+    expect(buildGatewayPresetPatch(buildProvider({ name: 'Main', apiKey: 'sk-test', model: 'qwen-plus' }))).toEqual({
+      name: 'Main · 无尽夏 Gateway',
+      protocol: 'openai-completions',
+      baseUrl: 'https://api.openai.com/v1',
       path: '/chat/completions',
-      apiKey: '',
+      apiKey: 'sk-test',
       model: 'qwen-plus'
     });
   });

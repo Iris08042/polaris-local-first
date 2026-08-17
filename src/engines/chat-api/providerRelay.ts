@@ -10,6 +10,10 @@ import { isAllowedProviderRelayTarget } from './providerRelayShared';
 
 export const ANTHROPIC_BROWSER_ACCESS_HEADER = 'anthropic-dangerous-direct-browser-access';
 
+const ENDLESS_SUMMER_WEB_ORIGIN = 'https://polaris.yichen888.top';
+const ENDLESS_SUMMER_PROVIDER_RELAY_PATH = '/gateway/api/provider-relay';
+const DEFAULT_PROVIDER_RELAY_PATH = '/api/provider-relay';
+
 export function isOfficialAnthropicApiEndpoint(endpointText: string) {
   try {
     const endpoint = new URL(endpointText);
@@ -48,4 +52,22 @@ export function canFallbackThroughProviderRelay(endpointText: string) {
   } catch {
     return false;
   }
+}
+
+function isEndlessSummerWebDeployment() {
+  return (
+    typeof window !== 'undefined'
+    && window.location?.origin === ENDLESS_SUMMER_WEB_ORIGIN
+    && !Capacitor.isNativePlatform()
+  );
+}
+
+export function shouldRouteThroughEndlessSummerGateway(endpointText: string) {
+  return isEndlessSummerWebDeployment() && canFallbackThroughProviderRelay(endpointText);
+}
+
+export function resolveProviderRelayPath() {
+  return isEndlessSummerWebDeployment()
+    ? ENDLESS_SUMMER_PROVIDER_RELAY_PATH
+    : DEFAULT_PROVIDER_RELAY_PATH;
 }

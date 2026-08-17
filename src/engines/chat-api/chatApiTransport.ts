@@ -6,6 +6,8 @@ import { recordStreamDebug } from './chatApiStreamDebug';
 import type { AssistantReplyProgress, BuiltRequest } from './chatApiTypes';
 import {
   ANTHROPIC_BROWSER_ACCESS_HEADER,
+  resolveProviderRelayPath,
+  shouldRouteThroughEndlessSummerGateway,
   shouldUseAnthropicBrowserDirectAccess
 } from './providerRelay';
 import type { ProviderProfile } from '../../types/domain';
@@ -53,9 +55,9 @@ export function resolveRequestTransportPath(params: {
   const { api, request, forceRelay = false } = params;
   const nativePlatform = Capacitor.isNativePlatform();
   const nativeProviderTransport = nativePlatform && !forceRelay && isAbsoluteProviderEndpoint(request.endpoint);
-  const shouldUseRelay = forceRelay;
+  const shouldUseRelay = forceRelay || shouldRouteThroughEndlessSummerGateway(request.endpoint);
   const requestedStreaming = requestBodyStreams(request.body);
-  const endpoint = shouldUseRelay ? buildInternalApiEndpoint('/api/provider-relay') : request.endpoint;
+  const endpoint = shouldUseRelay ? buildInternalApiEndpoint(resolveProviderRelayPath()) : request.endpoint;
 
   return {
     endpoint,
@@ -234,8 +236,8 @@ export async function executeBuiltRequest(params: {
     return await executeNativeBuiltRequest({ api, request, signal, onProgress, onChunk });
   }
 
-  const shouldUseRelay = forceRelay;
-  const endpoint = shouldUseRelay ? buildInternalApiEndpoint('/api/provider-relay') : request.endpoint;
+  const shouldUseRelay = forceRelay || shouldRouteThroughEndlessSummerGateway(request.endpoint);
+  const endpoint = shouldUseRelay ? buildInternalApiEndpoint(resolveProviderRelayPath()) : request.endpoint;
   const headers = shouldUseRelay ? { 'Content-Type': 'application/json' } : resolveDirectRequestHeaders(request);
   const body = shouldUseRelay
     ? {
