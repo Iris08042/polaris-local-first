@@ -11,7 +11,7 @@ import {
 import { HEARTBEAT_INBOX_CONFIG_CHANGED_EVENT } from '../../../app/heartbeat/heartbeatInboxSettings';
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
-const SOURCE_LABELS = { override: '临时模式', once: '单次时段', recurring: '循环时段', default: '默认档位' };
+const SOURCE_LABELS = { override: '临时模式', once: '单次时段', recurring: '循环时段', default: '默认设置' };
 
 function newId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -121,7 +121,9 @@ export function HeartbeatPolicyPanel() {
 
       <div className="heartbeat-policy__active">
         <span>当前生效</span>
-        <strong>{policy.enabled ? activeProfile?.name || snapshot?.active.profileName || '未知' : '主动消息已暂停'}</strong>
+        <strong>{policy.enabled
+          ? `${activeProfile?.name || snapshot?.active.profileName || '未知'} · ${snapshot?.active.allowContact === false ? '免打扰' : '可打扰'}`
+          : '主动消息已暂停'}</strong>
         <small>{policy.enabled ? snapshot ? SOURCE_LABELS[snapshot.active.source] : '尚未读取' : '仍会收取已有未读消息'}</small>
       </div>
 
@@ -136,10 +138,14 @@ export function HeartbeatPolicyPanel() {
       </div>
 
       <div className="heartbeat-policy__section">
-        <h4>默认档位</h4>
-        <select className="ps-input" value={policy.defaultProfileId} onChange={(event) => setPolicy({ ...policy, defaultProfileId: event.target.value })}>
+        <h4>默认设置</h4>
+        <label>默认频率<select className="ps-input" value={policy.defaultProfileId} onChange={(event) => setPolicy({ ...policy, defaultProfileId: event.target.value })}>
           {policy.profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
-        </select>
+        </select></label>
+        <div className="heartbeat-policy__section-head">
+          <div><h4>允许主动联系</h4><p>关闭后仍按默认频率唤醒，但不会主动说话或发送 Bark。</p></div>
+          <label className="heartbeat-policy__switch"><input type="checkbox" checked={policy.defaultAllowContact} onChange={(event) => setPolicy({ ...policy, defaultAllowContact: event.target.checked })} /><span /></label>
+        </div>
       </div>
 
       <div className="heartbeat-policy__section">
@@ -147,15 +153,21 @@ export function HeartbeatPolicyPanel() {
           <div><h4>临时模式</h4><p>优先级最高；可设截止时间，也可一直保持到手动关闭。</p></div>
           <label className="heartbeat-policy__switch"><input type="checkbox" checked={Boolean(policy.override)} onChange={(event) => setPolicy({
             ...policy,
-            override: event.target.checked ? { profileId: policy.defaultProfileId, until: null } : null
+            override: event.target.checked ? { profileId: policy.defaultProfileId, allowContact: policy.defaultAllowContact, until: null } : null
           })} /><span /></label>
         </div>
-        {policy.override && <div className="heartbeat-policy__row">
-          <select className="ps-input" value={policy.override.profileId} onChange={(event) => setPolicy({ ...policy, override: { ...policy.override!, profileId: event.target.value } })}>
-            {policy.profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
-          </select>
-          <label>截止时间（留空为长期）<input className="ps-input" type="datetime-local" value={localDateTime(policy.override.until)} onChange={(event) => setPolicy({ ...policy, override: { ...policy.override!, until: event.target.value ? isoDateTime(event.target.value) : null } })} /></label>
-        </div>}
+        {policy.override && <>
+          <div className="heartbeat-policy__row">
+            <label>临时频率<select className="ps-input" value={policy.override.profileId} onChange={(event) => setPolicy({ ...policy, override: { ...policy.override!, profileId: event.target.value } })}>
+              {policy.profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
+            </select></label>
+            <label>截止时间（留空为长期）<input className="ps-input" type="datetime-local" value={localDateTime(policy.override.until)} onChange={(event) => setPolicy({ ...policy, override: { ...policy.override!, until: event.target.value ? isoDateTime(event.target.value) : null } })} /></label>
+          </div>
+          <div className="heartbeat-policy__section-head">
+            <div><h4>允许主动联系</h4><p>此状态只在本次临时模式期间生效。</p></div>
+            <label className="heartbeat-policy__switch"><input type="checkbox" checked={policy.override.allowContact} onChange={(event) => setPolicy({ ...policy, override: { ...policy.override!, allowContact: event.target.checked } })} /><span /></label>
+          </div>
+        </>}
       </div>
 
       <div className="heartbeat-policy__section">
@@ -191,11 +203,11 @@ export function HeartbeatPolicyPanel() {
         <div className="heartbeat-policy__section-head">
           <div><h4>时段方案</h4><p>单次方案优先于循环方案；循环方案支持跨午夜。</p></div>
           <div className="heartbeat-policy__actions">
-            <button className="mcp-btn" type="button" onClick={() => setPolicy({ ...policy, schedules: [...policy.schedules, { id: newId('recurring'), name: '新循环时段', enabled: true, type: 'recurring', profileId: policy.defaultProfileId, days: [1, 2, 3, 4, 5, 6, 7], start: '09:00', end: '18:00' }] })}>＋ 循环</button>
+            <button className="mcp-btn" type="button" onClick={() => setPolicy({ ...policy, schedules: [...policy.schedules, { id: newId('recurring'), name: '新循环时段', enabled: true, type: 'recurring', profileId: policy.defaultProfileId, allowContact: policy.defaultAllowContact, days: [1, 2, 3, 4, 5, 6, 7], start: '09:00', end: '18:00' }] })}>＋ 循环</button>
             <button className="mcp-btn" type="button" onClick={() => {
               const start = new Date(Date.now() + 60 * 60_000);
               const end = new Date(start.getTime() + 2 * 60 * 60_000);
-              setPolicy({ ...policy, schedules: [...policy.schedules, { id: newId('once'), name: '新单次时段', enabled: true, type: 'once', profileId: policy.defaultProfileId, startAt: start.toISOString(), endAt: end.toISOString() }] });
+              setPolicy({ ...policy, schedules: [...policy.schedules, { id: newId('once'), name: '新单次时段', enabled: true, type: 'once', profileId: policy.defaultProfileId, allowContact: policy.defaultAllowContact, startAt: start.toISOString(), endAt: end.toISOString() }] });
             }}>＋ 单次</button>
           </div>
         </div>
@@ -207,6 +219,10 @@ export function HeartbeatPolicyPanel() {
               <input className="ps-input" value={schedule.name} onChange={(event) => patchSchedule(schedule.id, { name: event.target.value })} />
               <select className="ps-input" value={schedule.profileId} onChange={(event) => patchSchedule(schedule.id, { profileId: event.target.value })}>{policy.profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}</select>
               <button type="button" className="heartbeat-policy__delete" onClick={() => setPolicy({ ...policy, schedules: policy.schedules.filter((item) => item.id !== schedule.id) })}>删除</button>
+            </div>
+            <div className="heartbeat-policy__section-head">
+              <div><h4>允许主动联系</h4><p>关闭后此时段仍按所选频率唤醒，但不会主动说话或发送 Bark。</p></div>
+              <label className="heartbeat-policy__switch"><input type="checkbox" checked={schedule.allowContact} onChange={(event) => patchSchedule(schedule.id, { allowContact: event.target.checked })} /><span /></label>
             </div>
             {schedule.type === 'recurring' ? <>
               <div className="heartbeat-policy__days">{WEEKDAYS.map((day, index) => {

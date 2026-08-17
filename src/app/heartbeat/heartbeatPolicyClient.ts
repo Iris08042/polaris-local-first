@@ -18,6 +18,7 @@ export type HeartbeatRecurringSchedule = {
   enabled: boolean;
   type: 'recurring';
   profileId: string;
+  allowContact: boolean;
   days: number[];
   start: string;
   end: string;
@@ -29,6 +30,7 @@ export type HeartbeatOneTimeSchedule = {
   enabled: boolean;
   type: 'once';
   profileId: string;
+  allowContact: boolean;
   startAt: string;
   endAt: string;
 };
@@ -36,12 +38,13 @@ export type HeartbeatOneTimeSchedule = {
 export type HeartbeatSchedule = HeartbeatRecurringSchedule | HeartbeatOneTimeSchedule;
 
 export type HeartbeatPolicy = {
-  version: 1;
+  version: 2;
   enabled: boolean;
   defaultProfileId: string;
+  defaultAllowContact: boolean;
   profiles: HeartbeatProfile[];
   schedules: HeartbeatSchedule[];
-  override: { profileId: string; until: string | null } | null;
+  override: { profileId: string; allowContact: boolean; until: string | null } | null;
 };
 
 export type HeartbeatPolicySnapshot = {
@@ -49,6 +52,7 @@ export type HeartbeatPolicySnapshot = {
   active: {
     profileId: string;
     profileName: string;
+    allowContact: boolean;
     source: 'override' | 'once' | 'recurring' | 'default';
     scheduleId?: string | null;
     scheduleName?: string | null;
