@@ -109,6 +109,7 @@ export function useTimelineScroll({
   const previousGenerationActiveRef = useRef(isGenerationActive);
   const previousLatestMessageIdRef = useRef<string | null>(getLatestMessageId(messages));
   const previousLatestUserMessageIdRef = useRef<string | null>(getLatestUserMessageId(messages));
+  const initialLatestPendingRef = useRef(true);
   const suppressNextLiveScrollAnimationRef = useRef(false);
   const pendingManualModeRestoreRef = useRef(false);
   const pendingReplyStageMessageIdRef = useRef<string | null>(null);
@@ -153,6 +154,17 @@ export function useTimelineScroll({
       container.scrollTop = top;
     });
     updateJumpButtons(container, { latest: false });
+  };
+
+  const scrollToBottomAfterLayout = (targetConversationId: string | null) => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        if (previousConversationIdRef.current !== targetConversationId) return;
+        initialLatestPendingRef.current = false;
+        setFollowMode('bottom');
+        scrollToBottom('auto');
+      });
+    });
   };
 
   const scrollToTop = (behavior: ScrollBehavior) => {
@@ -266,6 +278,7 @@ export function useTimelineScroll({
     const latestUserMessageId = getLatestUserMessageId(messages);
     previousLatestMessageIdRef.current = latestMessageId;
     previousLatestUserMessageIdRef.current = latestUserMessageId;
+    initialLatestPendingRef.current = true;
     if (conversationId) conversationScrollSnapshots.delete(conversationId);
     setFollowMode('bottom');
     setShowJumpToLatest(false);
@@ -313,6 +326,10 @@ export function useTimelineScroll({
     }
 
     if (!isActiveWorld || !isWorldSettled) return;
+    if (initialLatestPendingRef.current && messages.length > 0) {
+      scrollToBottomAfterLayout(conversationId);
+      return;
+    }
     if (latestUserChanged && latestUserMessageId) {
       queueReplyStageScroll(latestUserMessageId);
       return;
