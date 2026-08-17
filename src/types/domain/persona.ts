@@ -1,4 +1,5 @@
 import type { AvatarDisplaySize, AvatarIconId, AvatarShape, PersonaAttachmentId, PersonaBaseId, PersonaCuriosityId, PersonaDisagreementId, PersonaExpressionId, PersonaGeneratedPromptMode, PersonaHumorId, PersonaInitiativeId, PersonaMemoryStyleId, PersonaRelationshipId, PersonaSelfDisclosureId, PersonaSilenceId, PersonaTagSelection } from './primitives';
+import type { ProviderProtocol } from './runtime';
 
 export interface PersonaDeepDefinition {
   identityHint: string;
@@ -86,6 +87,11 @@ export interface ConversationSummaryModelSettings {
   enabled: boolean;
   autoUpdateEnabled?: boolean;
   providerId?: string;
+  dedicatedProviderEnabled?: boolean;
+  protocol?: ProviderProtocol;
+  baseUrl?: string;
+  path?: string;
+  apiKey?: string;
   modelOverride?: string;
   targetSourceChars?: number;
   skipProcessedSources?: boolean;

@@ -20,6 +20,7 @@ type RelayRequestBody = {
   endpoint?: unknown;
   headers?: unknown;
   body?: unknown;
+  method?: unknown;
 };
 
 function parseRelayBody(req: VercelRequest): RelayRequestBody {
@@ -89,10 +90,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
+    const upstreamMethod = payload.method === 'GET' ? 'GET' : 'POST';
+
     const upstreamResponse = await fetch(endpoint, {
-      method: 'POST',
+      method: upstreamMethod,
       headers: relayHeaders,
-      body: JSON.stringify(payload.body ?? {})
+      ...(upstreamMethod === 'POST' ? { body: JSON.stringify(payload.body ?? {}) } : {})
     });
 
     res.status(upstreamResponse.status);

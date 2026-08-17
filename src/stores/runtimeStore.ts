@@ -60,7 +60,8 @@ import {
   mergeWebSearchConfig
 } from './runtimeStoreSearch';
 import {
-  DEFAULT_CONVERSATION_SUMMARY_MODEL_SETTINGS
+  DEFAULT_CONVERSATION_SUMMARY_MODEL_SETTINGS,
+  normalizeConversationSummaryModelSettings
 } from './runtimeStoreConversationSummary';
 import {
   DEFAULT_MEMORY_VECTOR_RETRIEVAL_SETTINGS
@@ -101,6 +102,7 @@ export type RuntimeState = {
   setApiConfig: (patch: Partial<ProviderProfile>) => void;
   setWebDavConfig: (patch: Partial<WebDavConfig>) => void;
   setSearchConfig: (patch: Partial<WebSearchConfig>) => void;
+  setConversationSummaryModel: (patch: Partial<ConversationSummaryModelSettings>) => void;
   setImageGeneration: (patch: Partial<ImageGenerationSettings>) => void;
   setImageUnderstanding: (patch: Partial<ImageUnderstandingSettings>) => void;
   setVoiceGeneration: (patch: Partial<VoiceGenerationSettings>) => void;
@@ -229,6 +231,13 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   setSearchConfig: (patch) =>
     set((state) => ({
       search: mergeWebSearchConfig(state.search, patch)
+    })),
+  setConversationSummaryModel: (patch) =>
+    set((state) => ({
+      conversationSummaryModel: normalizeConversationSummaryModelSettings({
+        ...state.conversationSummaryModel,
+        ...patch
+      })
     })),
   setImageGeneration: (patch) =>
     set((state) => ({

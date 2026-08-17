@@ -494,13 +494,86 @@
 }
 
 .es-rolling-sheet header button,
-.es-rolling-editor-actions button {
+.es-rolling-editor-actions button,
+.es-rolling-model-picker button {
   border: 1px solid rgba(151, 98, 114, 0.18);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.58);
   color: #8f5366;
   padding: 7px 12px;
   font-size: 12px;
+}
+
+.es-rolling-model-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 17px;
+  cursor: pointer;
+}
+
+.es-rolling-model-toggle input {
+  width: 19px;
+  height: 19px;
+  accent-color: #9f586f;
+}
+
+.es-rolling-model-toggle span {
+  min-width: 0;
+}
+
+.es-rolling-model-toggle strong {
+  font-size: 14px;
+}
+
+.es-rolling-model-form {
+  display: grid;
+  gap: 13px;
+  padding-top: 18px;
+}
+
+.es-rolling-model-form > label {
+  display: grid;
+  gap: 7px;
+  color: rgba(66, 57, 55, 0.72);
+  font-size: 12px;
+}
+
+.es-rolling-model-form input,
+.es-rolling-model-form select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid rgba(151, 98, 114, 0.18);
+  border-radius: 14px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.62);
+  color: #393332;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.es-rolling-model-form input:focus,
+.es-rolling-model-form select:focus {
+  border-color: rgba(151, 98, 114, 0.48);
+  box-shadow: 0 0 0 3px rgba(183, 106, 131, 0.08);
+}
+
+.es-rolling-model-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.es-rolling-model-picker button {
+  white-space: nowrap;
+}
+
+.es-rolling-model-following {
+  margin: 16px 0 0;
+  color: rgba(66, 57, 55, 0.58);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .es-rolling-sheet > .has-summary,

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   DEFAULT_MEMORY_SUMMARY_INSTRUCTION,
   resolveMemorySummary,
@@ -8,11 +8,38 @@ import {
   ROLLING_SUMMARY_TRIGGER_MESSAGE_COUNT,
   updateRollingSummaryForConversation
 } from '../../app/chat/rollingSummary';
+import { discoverProviderModels, type ProviderModelOption } from '../../engines/providerModelDiscovery';
+import { getDefaultProviderPath, inferProviderProtocol } from '../../engines/providerProtocol';
 import { useChatStore } from '../../stores/chatStore';
+import { useRuntimeStore } from '../../stores/runtimeStore';
 import {
   CONVERSATION_MEMORY_SUMMARY_VERSION,
-  type ConversationRollingSummary
+  type ConversationSummaryModelSettings,
+  type ConversationRollingSummary,
+  type ProviderProfile,
+  type ProviderProtocol
 } from '../../types/domain';
+
+const SUMMARY_PROTOCOL_OPTIONS: Array<{ value: ProviderProtocol; label: string }> = [
+  { value: 'openai-completions', label: 'OpenAI Chat Completions' },
+  { value: 'openai-responses', label: 'OpenAI Responses' },
+  { value: 'anthropic-messages', label: 'Anthropic Messages' },
+  { value: 'gemini-generate-content', label: 'Gemini Generate Content' }
+];
+
+function buildSummaryProvider(settings: ConversationSummaryModelSettings): ProviderProfile {
+  const protocol = inferProviderProtocol({ protocol: settings.protocol, path: settings.path });
+  return {
+    id: 'provider-rolling-summary-draft',
+    name: '记忆摘要',
+    protocol,
+    baseUrl: settings.baseUrl?.trim() ?? '',
+    path: settings.path?.trim() || getDefaultProviderPath(protocol),
+    apiKey: settings.apiKey?.trim() ?? '',
+    model: settings.modelOverride?.trim() ?? '',
+    capabilities: { images: false, streaming: false, thinking: false }
+  };
+}
 
 function formatUpdatedAt(value: number | undefined) {
   if (!value) return '尚未更新';
@@ -36,6 +63,12 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
   const [summaryDraft, setSummaryDraft] = useState('');
   const [editingInstruction, setEditingInstruction] = useState(false);
   const [instructionDraft, setInstructionDraft] = useState('');
+  const summaryModelSettings = useRuntimeStore((state) => state.conversationSummaryModel);
+  const [modelDraft, setModelDraft] = useState<ConversationSummaryModelSettings>(() => ({
+    ...summaryModelSettings
+  }));
+  const [modelOptions, setModelOptions] = useState<ProviderModelOption[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
   const summary = useMemo(
     () => resolveMemorySummary(conversation?.rollingSummary),
     [conversation?.rollingSummary]
@@ -45,6 +78,70 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
     () => conversation ? resolveRollingSummarySource(conversation) : null,
     [conversation]
   );
+
+  useEffect(() => {
+    setModelDraft({ ...summaryModelSettings });
+  }, [summaryModelSettings]);
+
+  const updateModelDraft = (patch: Partial<ConversationSummaryModelSettings>) => {
+    setModelDraft((current) => ({ ...current, ...patch }));
+    setModelOptions([]);
+  };
+
+  const saveModelSettings = async () => {
+    if (saving) return;
+    const provider = buildSummaryProvider(modelDraft);
+    if (modelDraft.dedicatedProviderEnabled) {
+      if (!provider.baseUrl.startsWith('https://')) {
+        setNotice('独立摘要线路需要填写公开 HTTPS Base URL');
+        return;
+      }
+      if (!provider.apiKey || !provider.model) {
+        setNotice('请填写独立摘要线路的 API Key 和模型');
+        return;
+      }
+    }
+
+    const previous = useRuntimeStore.getState().conversationSummaryModel;
+    setSaving(true);
+    setNotice('');
+    useRuntimeStore.getState().setConversationSummaryModel({
+      ...modelDraft,
+      protocol: provider.protocol,
+      baseUrl: provider.baseUrl,
+      path: provider.path,
+      apiKey: provider.apiKey,
+      modelOverride: provider.model
+    });
+    try {
+      await useRuntimeStore.getState().persistToDb();
+      setNotice(modelDraft.dedicatedProviderEnabled
+        ? '独立摘要线路已保存'
+        : '记忆摘要已改为跟随主聊天');
+    } catch (error) {
+      useRuntimeStore.getState().setConversationSummaryModel(previous);
+      setNotice(error instanceof Error ? error.message : '摘要线路保存失败');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const loadModels = async () => {
+    if (loadingModels) return;
+    setLoadingModels(true);
+    setNotice('');
+    const result = await discoverProviderModels({ api: buildSummaryProvider(modelDraft) });
+    if (result.ok) {
+      setModelOptions(result.models);
+      if (!modelDraft.modelOverride?.trim() && result.models[0]) {
+        setModelDraft((current) => ({ ...current, modelOverride: result.models[0].id }));
+      }
+      setNotice(`已拉取 ${result.models.length} 个模型`);
+    } else {
+      setNotice(result.error);
+    }
+    setLoadingModels(false);
+  };
 
   const persistSummaryRecord = async (
     next: ConversationRollingSummary,
@@ -127,6 +224,90 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
           <strong>长期稳定的理解，会随对话持续整理</strong>
           <small>Long-term understanding</small>
           <p>最近 {ROLLING_SUMMARY_RAW_CONTEXT_MESSAGE_COUNT} 条真实消息仍保留原文；记忆摘要每积累 {ROLLING_SUMMARY_TRIGGER_MESSAGE_COUNT} 条自动更新，也可以随时提前同步。</p>
+        </article>
+
+        <article className="es-rolling-sheet es-rolling-model-settings">
+          <header>
+            <div><strong>摘要模型</strong><small>Summary model</small></div>
+            <button type="button" onClick={() => { void saveModelSettings(); }} disabled={saving}>保存</button>
+          </header>
+          <label className="es-rolling-model-toggle">
+            <input
+              type="checkbox"
+              checked={modelDraft.dedicatedProviderEnabled === true}
+              onChange={(event) => updateModelDraft({ dedicatedProviderEnabled: event.target.checked })}
+            />
+            <span><strong>使用独立线路和 Key</strong><small>关闭时跟随当前聊天模型</small></span>
+          </label>
+          {modelDraft.dedicatedProviderEnabled ? (
+            <div className="es-rolling-model-form">
+              <label>
+                <span>接口格式</span>
+                <select
+                  value={inferProviderProtocol({ protocol: modelDraft.protocol, path: modelDraft.path })}
+                  onChange={(event) => {
+                    const protocol = event.target.value as ProviderProtocol;
+                    updateModelDraft({ protocol, path: getDefaultProviderPath(protocol) });
+                  }}
+                >
+                  {SUMMARY_PROTOCOL_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Base URL</span>
+                <input
+                  type="url"
+                  value={modelDraft.baseUrl ?? ''}
+                  placeholder="https://api.example.com/v1"
+                  onChange={(event) => updateModelDraft({ baseUrl: event.target.value })}
+                />
+              </label>
+              <label>
+                <span>API Path</span>
+                <input
+                  value={modelDraft.path ?? ''}
+                  placeholder="/chat/completions"
+                  onChange={(event) => updateModelDraft({ path: event.target.value })}
+                />
+              </label>
+              <label>
+                <span>API Key</span>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={modelDraft.apiKey ?? ''}
+                  placeholder="填写摘要模型 API Key"
+                  onChange={(event) => updateModelDraft({ apiKey: event.target.value })}
+                />
+              </label>
+              <label>
+                <span>模型</span>
+                <div className="es-rolling-model-picker">
+                  <input
+                    list="es-rolling-summary-models"
+                    value={modelDraft.modelOverride ?? ''}
+                    placeholder="填写或拉取模型"
+                    onChange={(event) => setModelDraft((current) => ({
+                      ...current,
+                      modelOverride: event.target.value
+                    }))}
+                  />
+                  <button type="button" onClick={() => { void loadModels(); }} disabled={loadingModels}>
+                    {loadingModels ? '拉取中…' : '拉取模型'}
+                  </button>
+                </div>
+                <datalist id="es-rolling-summary-models">
+                  {modelOptions.map((option) => (
+                    <option key={option.id} value={option.id}>{option.label ?? option.id}</option>
+                  ))}
+                </datalist>
+              </label>
+            </div>
+          ) : (
+            <p className="es-rolling-model-following">摘要更新会继续使用当前聊天里的模型和供应商。</p>
+          )}
         </article>
 
         <article className="es-rolling-sheet">

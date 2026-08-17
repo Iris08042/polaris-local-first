@@ -1,5 +1,6 @@
 import { requestAssistantReply } from '../../engines/chatApi';
 import { resolvePersonaProviderBinding } from '../../engines/personaProviderBinding';
+import { getDefaultProviderPath, inferProviderProtocol } from '../../engines/providerProtocol';
 import type { AssistantRequestContext } from '../../engines/request/requestContext';
 import { useChatStore } from '../../stores/chatStore';
 import { usePersonaStore } from '../../stores/personaStore';
@@ -9,8 +10,10 @@ import {
   normalizeConversationRollingSummary,
   type ChatMessage,
   type Conversation,
+  type ConversationSummaryModelSettings,
   type ConversationRollingSummary,
-  type Persona
+  type Persona,
+  type ProviderProfile
 } from '../../types/domain';
 
 export const ROLLING_SUMMARY_TRIGGER_MESSAGE_COUNT = 50;
@@ -70,6 +73,39 @@ export function resolveMemorySummary(summary: ConversationRollingSummary | null 
 
 export function resolveMemorySummaryInstruction(summary: ConversationRollingSummary | null | undefined) {
   return resolveMemorySummary(summary)?.instruction?.trim() || DEFAULT_MEMORY_SUMMARY_INSTRUCTION;
+}
+
+export function resolveRollingSummaryProvider(
+  settings: ConversationSummaryModelSettings
+): ProviderProfile | null {
+  if (!settings.dedicatedProviderEnabled) return null;
+
+  const protocol = inferProviderProtocol({
+    protocol: settings.protocol,
+    path: settings.path
+  });
+  const baseUrl = settings.baseUrl?.trim() ?? '';
+  const path = settings.path?.trim() || getDefaultProviderPath(protocol);
+  const apiKey = settings.apiKey?.trim() ?? '';
+  const model = settings.modelOverride?.trim() ?? '';
+  if (!baseUrl || !apiKey || !model) {
+    throw new Error('请先在记忆摘要页填写独立线路的 Base URL、API Key 和模型。');
+  }
+
+  return {
+    id: 'provider-rolling-summary',
+    name: '记忆摘要',
+    protocol,
+    baseUrl,
+    path,
+    apiKey,
+    model,
+    capabilities: {
+      images: false,
+      streaming: false,
+      thinking: false
+    }
+  };
 }
 
 async function appendRollingSummaryReceipt(conversationId: string, messageId: string | null, receipt: string) {
@@ -202,8 +238,9 @@ export async function updateRollingSummaryForConversation(
       providers: selectVisibleProviders(runtime),
       persona
     });
+    const summaryApi = resolveRollingSummaryProvider(runtime.conversationSummaryModel) ?? providerBinding.api;
     const reply = await requestAssistantReply({
-      api: providerBinding.api,
+      api: summaryApi,
       context: buildRollingSummaryContext({
         persona,
         previousSummary: resolveMemorySummary(conversation.rollingSummary),
@@ -211,8 +248,8 @@ export async function updateRollingSummaryForConversation(
       }),
       advanced: {
         ...persona.advanced,
-        providerId: providerBinding.api.id,
-        modelOverride: providerBinding.api.model,
+        providerId: summaryApi.id,
+        modelOverride: summaryApi.model,
         temperature: '0.2',
         maxTokens: ROLLING_SUMMARY_MAX_OUTPUT_TOKENS,
         showThinking: false,

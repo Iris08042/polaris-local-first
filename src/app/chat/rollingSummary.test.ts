@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_MEMORY_SUMMARY_INSTRUCTION,
   resolveMemorySummary,
+  resolveRollingSummaryProvider,
   resolveRollingSummaryReceiptMessageId,
   resolveRollingSummarySource
 } from './rollingSummary';
@@ -127,6 +128,36 @@ describe('memory summary instruction', () => {
     expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('天气、通勤');
     expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('小标题不是固定栏目');
     expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('用户对摘要的手动编辑优先级最高');
+  });
+});
+
+describe('rolling summary provider', () => {
+  it('keeps following the chat provider until the independent route is enabled', () => {
+    expect(resolveRollingSummaryProvider({ enabled: false })).toBeNull();
+  });
+
+  it('builds an independent provider with its own key and model', () => {
+    expect(resolveRollingSummaryProvider({
+      enabled: false,
+      dedicatedProviderEnabled: true,
+      protocol: 'gemini-generate-content',
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+      path: '/models/{model}:generateContent',
+      apiKey: 'summary-key',
+      modelOverride: 'gemini-2.5-flash'
+    })).toEqual(expect.objectContaining({
+      protocol: 'gemini-generate-content',
+      apiKey: 'summary-key',
+      model: 'gemini-2.5-flash'
+    }));
+  });
+
+  it('refuses to silently fall back after an incomplete independent route is enabled', () => {
+    expect(() => resolveRollingSummaryProvider({
+      enabled: false,
+      dedicatedProviderEnabled: true,
+      baseUrl: 'https://api.example.com/v1'
+    })).toThrow('Base URL、API Key 和模型');
   });
 });
 

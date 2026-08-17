@@ -143,14 +143,42 @@ describe('discoverProviderModels', () => {
     expect(result.ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const [url, init] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
-    expect(url).toBe('https://selfhost.example.test/api/provider-models');
+    expect(url).toBe('https://selfhost.example.test/api/provider-relay');
     expect(init.method).toBe('POST');
     expect(JSON.parse(String(init.body))).toEqual({
       endpoint: 'https://api.example.com/v1/models',
       headers: {
         Accept: 'application/json',
         Authorization: 'Bearer sk-test'
+      },
+      method: 'GET'
+    });
+  });
+
+  it('uses the Endless Summer Gateway without attempting a direct browser request', async () => {
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'https://polaris.yichen888.top'
       }
+    });
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      data: [{ id: 'gateway-model' }]
+    }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await discoverProviderModels({ api: createProvider() });
+
+    expect(result.ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://polaris.yichen888.top/gateway/api/provider-relay');
+    expect(JSON.parse(String(init.body))).toEqual({
+      endpoint: 'https://api.example.com/v1/models',
+      headers: {
+        Accept: 'application/json',
+        Authorization: 'Bearer sk-test'
+      },
+      method: 'GET'
     });
   });
 

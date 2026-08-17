@@ -7,6 +7,8 @@ import {
   ANTHROPIC_BROWSER_ACCESS_HEADER,
   canFallbackThroughProviderRelay,
   isOfficialAnthropicApiEndpoint,
+  resolveProviderRelayPath,
+  shouldRouteThroughEndlessSummerGateway,
   sanitizeProviderRelayHeaders
 } from './chat-api/providerRelay';
 
@@ -176,8 +178,20 @@ export async function discoverProviderModels(params: {
   try {
     const endpoint = buildProviderModelListEndpoint(api);
     const upstreamHeaders = buildProviderModelHeaders(api);
+    const relayRequest = () => fetch(buildInternalApiEndpoint(resolveProviderRelayPath()), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        endpoint,
+        headers: sanitizeProviderRelayHeaders(upstreamHeaders),
+        method: 'GET'
+      }),
+      signal
+    });
     let res: Response;
-    try {
+    if (shouldRouteThroughEndlessSummerGateway(endpoint)) {
+      res = await relayRequest();
+    } else try {
       res = await fetch(endpoint, {
         method: 'GET',
         headers: upstreamHeaders,
@@ -187,15 +201,7 @@ export async function discoverProviderModels(params: {
       if (signal?.aborted || !canFallbackThroughProviderRelay(endpoint)) {
         throw error;
       }
-      res = await fetch(buildInternalApiEndpoint('/api/provider-models'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          endpoint,
-          headers: sanitizeProviderRelayHeaders(upstreamHeaders)
-        }),
-        signal
-      });
+      res = await relayRequest();
     }
     const payload = await readProviderModelResponse(res);
     const models = normalizeProviderModelList(api, payload);

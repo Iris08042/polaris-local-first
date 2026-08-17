@@ -366,7 +366,7 @@ boot();
         heading: 'Memory, context, and material replay',
         body: [
           'Endless Summer has one active memory chain: persona settings, the current chat rolling summary, the latest 200 real messages, and long-term memories recalled on demand from Ombre Brain (OB). Retired Polaris personal memory, cross-chat summaries, and vector recall do not enter requests and cannot be read or written by tools.',
-          'The rolling summary only preserves continuity inside the current chat. The latest 200 real user/assistant messages stay verbatim; every 50 older messages are merged automatically, and a manual sync is available on the Memory page. Newer raw messages win any conflict with the summary.',
+          'The rolling summary only preserves continuity inside the current chat. The latest 200 real user/assistant messages stay verbatim; every 50 older messages are merged automatically, and a manual sync is available on the Memory page. Its model follows the current chat by default, or the Memory Summary page can use an independent Base URL, protocol, API key, and model. Newer raw messages win any conflict with the summary.',
           'Long-term facts belong to OB. The model follows OB breath, hold, grow, breath_search, and dream conventions. Tool output is external data and cannot override an explicit current user statement. Workspace references remain project material, not relationship memory.'
         ],
         bullets: [
