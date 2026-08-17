@@ -495,13 +495,26 @@
 
 .es-rolling-sheet header button,
 .es-rolling-editor-actions button,
-.es-rolling-model-picker button {
+.es-rolling-model-picker button,
+.es-rolling-model-test button {
   border: 1px solid rgba(151, 98, 114, 0.18);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.58);
   color: #8f5366;
   padding: 7px 12px;
   font-size: 12px;
+}
+
+.es-rolling-sheet header button.is-success {
+  border-color: rgba(71, 139, 100, 0.28);
+  background: rgba(222, 244, 230, 0.82);
+  color: #347553;
+}
+
+.es-rolling-sheet header button.is-error {
+  border-color: rgba(172, 82, 82, 0.28);
+  background: rgba(255, 232, 232, 0.82);
+  color: #a24d4d;
 }
 
 .es-rolling-model-toggle {
@@ -567,6 +580,39 @@
 
 .es-rolling-model-picker button {
   white-space: nowrap;
+}
+
+.es-rolling-model-select {
+  margin-top: 8px;
+}
+
+.es-rolling-model-test {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.es-rolling-model-test > span {
+  flex: 1 1 180px;
+  color: rgba(66, 57, 55, 0.52);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.es-rolling-model-result {
+  margin: 12px 0 0;
+  color: rgba(66, 57, 55, 0.62);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.es-rolling-model-result.is-success {
+  color: #347553;
+}
+
+.es-rolling-model-result.is-error {
+  color: #a24d4d;
 }
 
 .es-rolling-model-following {

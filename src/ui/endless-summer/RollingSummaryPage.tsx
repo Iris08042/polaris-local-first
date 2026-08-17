@@ -8,6 +8,7 @@ import {
   ROLLING_SUMMARY_TRIGGER_MESSAGE_COUNT,
   updateRollingSummaryForConversation
 } from '../../app/chat/rollingSummary';
+import { testApiConnection } from '../../engines/chatApi';
 import { discoverProviderModels, type ProviderModelOption } from '../../engines/providerModelDiscovery';
 import { getDefaultProviderPath, inferProviderProtocol } from '../../engines/providerProtocol';
 import { useChatStore } from '../../stores/chatStore';
@@ -69,6 +70,10 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
   }));
   const [modelOptions, setModelOptions] = useState<ProviderModelOption[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
+  const [testingModel, setTestingModel] = useState(false);
+  const [modelLoadResult, setModelLoadResult] = useState<null | { ok: boolean; message: string }>(null);
+  const [modelTestResult, setModelTestResult] = useState<null | { ok: boolean; message: string }>(null);
+  const [modelSaveResult, setModelSaveResult] = useState<null | { ok: boolean; message: string }>(null);
   const summary = useMemo(
     () => resolveMemorySummary(conversation?.rollingSummary),
     [conversation?.rollingSummary]
@@ -86,6 +91,9 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
   const updateModelDraft = (patch: Partial<ConversationSummaryModelSettings>) => {
     setModelDraft((current) => ({ ...current, ...patch }));
     setModelOptions([]);
+    setModelLoadResult(null);
+    setModelTestResult(null);
+    setModelSaveResult(null);
   };
 
   const saveModelSettings = async () => {
@@ -93,18 +101,18 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
     const provider = buildSummaryProvider(modelDraft);
     if (modelDraft.dedicatedProviderEnabled) {
       if (!provider.baseUrl.startsWith('https://')) {
-        setNotice('独立摘要线路需要填写公开 HTTPS Base URL');
+        setModelSaveResult({ ok: false, message: '需要填写公开 HTTPS Base URL' });
         return;
       }
       if (!provider.apiKey || !provider.model) {
-        setNotice('请填写独立摘要线路的 API Key 和模型');
+        setModelSaveResult({ ok: false, message: '请填写 API Key 和模型' });
         return;
       }
     }
 
     const previous = useRuntimeStore.getState().conversationSummaryModel;
     setSaving(true);
-    setNotice('');
+    setModelSaveResult(null);
     useRuntimeStore.getState().setConversationSummaryModel({
       ...modelDraft,
       protocol: provider.protocol,
@@ -115,12 +123,16 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
     });
     try {
       await useRuntimeStore.getState().persistToDb();
-      setNotice(modelDraft.dedicatedProviderEnabled
-        ? '独立摘要线路已保存'
-        : '记忆摘要已改为跟随主聊天');
+      setModelSaveResult({
+        ok: true,
+        message: modelDraft.dedicatedProviderEnabled ? '独立摘要线路已保存' : '已改为跟随主聊天'
+      });
     } catch (error) {
       useRuntimeStore.getState().setConversationSummaryModel(previous);
-      setNotice(error instanceof Error ? error.message : '摘要线路保存失败');
+      setModelSaveResult({
+        ok: false,
+        message: error instanceof Error ? error.message : '摘要线路保存失败'
+      });
     } finally {
       setSaving(false);
     }
@@ -129,18 +141,32 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
   const loadModels = async () => {
     if (loadingModels) return;
     setLoadingModels(true);
-    setNotice('');
+    setModelLoadResult(null);
+    setModelTestResult(null);
     const result = await discoverProviderModels({ api: buildSummaryProvider(modelDraft) });
     if (result.ok) {
       setModelOptions(result.models);
-      if (!modelDraft.modelOverride?.trim() && result.models[0]) {
-        setModelDraft((current) => ({ ...current, modelOverride: result.models[0].id }));
-      }
-      setNotice(`已拉取 ${result.models.length} 个模型`);
+      setModelLoadResult({ ok: true, message: `已拉取 ${result.models.length} 个模型，请在下方选择` });
     } else {
-      setNotice(result.error);
+      setModelLoadResult({ ok: false, message: result.error });
     }
     setLoadingModels(false);
+  };
+
+  const testModelConnection = async () => {
+    if (testingModel) return;
+    const provider = buildSummaryProvider(modelDraft);
+    if (!provider.baseUrl.startsWith('https://') || !provider.apiKey || !provider.model) {
+      setModelTestResult({ ok: false, message: '请先填写 Base URL、API Key 和模型' });
+      return;
+    }
+    setTestingModel(true);
+    setModelTestResult(null);
+    const result = await testApiConnection({ api: provider });
+    setModelTestResult(result.ok
+      ? { ok: true, message: result.message ?? '连接成功' }
+      : { ok: false, message: result.error });
+    setTestingModel(false);
   };
 
   const persistSummaryRecord = async (
@@ -229,8 +255,20 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
         <article className="es-rolling-sheet es-rolling-model-settings">
           <header>
             <div><strong>摘要模型</strong><small>Summary model</small></div>
-            <button type="button" onClick={() => { void saveModelSettings(); }} disabled={saving}>保存</button>
+            <button
+              type="button"
+              className={modelSaveResult ? (modelSaveResult.ok ? 'is-success' : 'is-error') : ''}
+              onClick={() => { void saveModelSettings(); }}
+              disabled={saving}
+            >
+              {saving ? '保存中…' : modelSaveResult ? (modelSaveResult.ok ? '保存成功' : '保存失败') : '保存'}
+            </button>
           </header>
+          {modelSaveResult ? (
+            <p className={`es-rolling-model-result ${modelSaveResult.ok ? 'is-success' : 'is-error'}`} role="status">
+              {modelSaveResult.message}
+            </p>
+          ) : null}
           <label className="es-rolling-model-toggle">
             <input
               type="checkbox"
@@ -286,24 +324,49 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
                 <span>模型</span>
                 <div className="es-rolling-model-picker">
                   <input
-                    list="es-rolling-summary-models"
                     value={modelDraft.modelOverride ?? ''}
-                    placeholder="填写或拉取模型"
-                    onChange={(event) => setModelDraft((current) => ({
-                      ...current,
-                      modelOverride: event.target.value
-                    }))}
+                    placeholder="手动填写模型"
+                    onChange={(event) => updateModelDraft({ modelOverride: event.target.value })}
                   />
                   <button type="button" onClick={() => { void loadModels(); }} disabled={loadingModels}>
                     {loadingModels ? '拉取中…' : '拉取模型'}
                   </button>
                 </div>
-                <datalist id="es-rolling-summary-models">
-                  {modelOptions.map((option) => (
-                    <option key={option.id} value={option.id}>{option.label ?? option.id}</option>
-                  ))}
-                </datalist>
+                {modelOptions.length ? (
+                  <select
+                    className="es-rolling-model-select"
+                    value={modelOptions.some((option) => option.id === modelDraft.modelOverride)
+                      ? modelDraft.modelOverride
+                      : ''}
+                    onChange={(event) => {
+                      setModelDraft((current) => ({ ...current, modelOverride: event.target.value }));
+                      setModelTestResult(null);
+                      setModelSaveResult(null);
+                    }}
+                    aria-label="选择已拉取的摘要模型"
+                  >
+                    <option value="">请选择已拉取的模型（{modelOptions.length}）</option>
+                    {modelOptions.map((option) => (
+                      <option key={option.id} value={option.id}>{option.label ? `${option.label} · ${option.id}` : option.id}</option>
+                    ))}
+                  </select>
+                ) : null}
+                {modelLoadResult ? (
+                  <small className={`es-rolling-model-result ${modelLoadResult.ok ? 'is-success' : 'is-error'}`} role="status">
+                    {modelLoadResult.message}
+                  </small>
+                ) : null}
               </label>
+              <div className="es-rolling-model-test">
+                <button type="button" onClick={() => { void testModelConnection(); }} disabled={testingModel}>
+                  {testingModel ? '正在测试…' : '测试连接'}
+                </button>
+                {modelTestResult ? (
+                  <span className={`es-rolling-model-result ${modelTestResult.ok ? 'is-success' : 'is-error'}`} role="status">
+                    {modelTestResult.ok ? '连接成功 · ' : '连接失败 · '}{modelTestResult.message}
+                  </span>
+                ) : <span>发送一次最小真实请求，不会修改摘要</span>}
+              </div>
             </div>
           ) : (
             <p className="es-rolling-model-following">摘要更新会继续使用当前聊天里的模型和供应商。</p>
