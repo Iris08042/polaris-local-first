@@ -1,4 +1,5 @@
 import { readHeartbeatInboxConfig } from '../heartbeat/heartbeatInboxSettings';
+import type { ProviderProtocol } from '../../types/domain';
 
 export type FarmTool = {
   name: string;
@@ -7,11 +8,13 @@ export type FarmTool = {
 };
 
 export type FarmPublicConfig = {
-  version: 1;
+  version: number;
   humanUrl: string;
   agentKeyConfigured: boolean;
   autonomousEnabled: boolean;
+  protocol: ProviderProtocol;
   baseUrl: string;
+  path: string;
   model: string;
   apiKeyConfigured: boolean;
   enabledToolNames: string[];
@@ -21,7 +24,9 @@ export type FarmConfigDraft = {
   humanUrl: string;
   agentKey?: string;
   autonomousEnabled: boolean;
+  protocol: ProviderProtocol;
   baseUrl: string;
+  path: string;
   apiKey?: string;
   model: string;
   enabledToolNames: string[];
@@ -68,11 +73,11 @@ export function saveFarmConfig(draft: FarmConfigDraft) {
   return farmRequest<FarmPublicConfig>('config', 'PUT', draft);
 }
 
-export function fetchFarmModels(draft: Pick<FarmConfigDraft, 'baseUrl' | 'apiKey' | 'model'>) {
+export function fetchFarmModels(draft: Pick<FarmConfigDraft, 'protocol' | 'baseUrl' | 'path' | 'apiKey' | 'model'>) {
   return farmRequest<{ models: string[] }>('models', 'POST', draft);
 }
 
-export function testFarmModel(draft: Pick<FarmConfigDraft, 'baseUrl' | 'apiKey' | 'model'>) {
+export function testFarmModel(draft: Pick<FarmConfigDraft, 'protocol' | 'baseUrl' | 'path' | 'apiKey' | 'model'>) {
   return farmRequest<{ ok: true; model: string; reply: string }>('test-model', 'POST', draft);
 }
 

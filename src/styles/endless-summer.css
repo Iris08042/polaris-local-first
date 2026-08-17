@@ -278,8 +278,8 @@
 .es-farm-panel > header em { padding: 4px 8px; border-radius: 999px; color: #8a766d; background: rgba(255,255,255,.5); font: 9px system-ui, sans-serif; font-style: normal; }
 .es-farm-panel > label { display: grid; gap: 6px; margin-top: 11px; }
 .es-farm-panel > label > span { color: #706761; font: 11px system-ui, sans-serif; }
-.es-farm-panel > label > input { box-sizing: border-box; width: 100%; height: 45px; padding: 0 13px; border: 1px solid rgba(126,105,94,.15); outline: 0; border-radius: 14px; color: var(--es-ink); background: rgba(255,255,255,.55); font: 13px system-ui, sans-serif; }
-.es-farm-panel > label > input:focus { border-color: rgba(185,95,120,.38); box-shadow: 0 0 0 3px rgba(185,95,120,.08); }
+.es-farm-panel > label > input, .es-farm-panel > label > select { box-sizing: border-box; min-width: 0; width: 100%; height: 45px; padding: 0 13px; border: 1px solid rgba(126,105,94,.15); outline: 0; border-radius: 14px; color: var(--es-ink); background: rgba(255,255,255,.55); font: 13px system-ui, sans-serif; text-overflow: ellipsis; }
+.es-farm-panel > label > input:focus, .es-farm-panel > label > select:focus { border-color: rgba(185,95,120,.38); box-shadow: 0 0 0 3px rgba(185,95,120,.08); }
 .es-farm-secondary, .es-farm-save { min-height: 45px; border: 1px solid rgba(184,101,119,.22); border-radius: 14px; color: #96576a; background: rgba(255,255,255,.53); font: 12px system-ui, sans-serif; }
 .es-farm-panel > .es-farm-secondary { width: 100%; margin-top: 13px; }
 .es-farm-button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 13px; }
@@ -302,6 +302,12 @@
 .es-farm-hint { margin: 0; }
 .es-farm-save { width: 100%; min-height: 54px; margin-top: 16px; color: #8f4e61; background: linear-gradient(135deg, rgba(248,205,213,.82), rgba(255,235,226,.78)); box-shadow: 0 10px 23px rgba(139,78,91,.1); font-size: 14px; }
 .es-farm-security { margin: 11px 7px 0; color: #8d857f; font: 9px/1.55 system-ui, sans-serif; text-align: center; }
+.es-farm-action-result { margin: 9px 2px 0; overflow-wrap: anywhere; color: #776f69; font: 10px/1.5 system-ui, sans-serif; }
+.es-farm-action-result.success { color: #61785c; }
+.es-farm-action-result.error { color: #a05159; }
+.es-farm-action-result.centered { margin-inline: 10px; text-align: center; }
+.es-farm-save.success { color: #61785c; border-color: rgba(97,120,92,.24); }
+.es-farm-save.error { color: #a05159; border-color: rgba(160,81,89,.24); }
 
 .es-settings-page > h2 { margin: 20px 7px 9px; font-size: 16px; font-weight: 500; }
 .es-settings-group { position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,.94); border-radius: 28px; background: linear-gradient(135deg, rgba(255,223,228,.73), rgba(255,240,239,.62)); box-shadow: 0 13px 28px rgba(82,72,61,.09), inset 0 1px rgba(255,255,255,.92); backdrop-filter: blur(21px) saturate(1.12); -webkit-backdrop-filter: blur(21px) saturate(1.12); }
