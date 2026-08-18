@@ -1,12 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  buildRollingSummaryContext,
   DEFAULT_MEMORY_SUMMARY_INSTRUCTION,
+  formatRollingSummaryBeijingDateTime,
   resolveMemorySummary,
   resolveRollingSummaryProvider,
   resolveRollingSummaryReceiptMessageId,
   resolveRollingSummarySource
 } from './rollingSummary';
-import type { ChatMessage } from '../../types/domain';
+import type { ChatMessage, Persona } from '../../types/domain';
 
 function message(id: string, role: 'user' | 'assistant', content = id): ChatMessage {
   return { id, role, content, timestamp: Number(id.replace(/\D/g, '')) || 1 };
@@ -123,11 +125,38 @@ describe('resolveRollingSummarySource', () => {
 });
 
 describe('memory summary instruction', () => {
-  it('selects durable understanding and excludes daily chronology without fixed sections', () => {
-    expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('长期背景与稳定关系');
-    expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('天气、通勤');
-    expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('小标题不是固定栏目');
-    expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('用户对摘要的手动编辑优先级最高');
+  it('updates long-term memory and timestamped todos in one record', () => {
+    expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('由“长期摘要”和“待办”组成');
+    expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('长期挂起（无固定截止日期）');
+    expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('已逾期事项继续保留');
+    expect(DEFAULT_MEMORY_SUMMARY_INSTRUCTION).toContain('若当前记录中已经留有上述状态，本轮更新时删除');
+  });
+
+  it('supplies Beijing timestamps for relative-date normalization and overdue checks', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-18T12:30:00Z'));
+    try {
+      const context = buildRollingSummaryContext({
+        persona: {
+          id: 'yemingzhou',
+          name: '叶明舟',
+          userName: '清瑶'
+        } as Persona,
+        messages: [{
+          id: 'u1',
+          role: 'user',
+          content: '明天晚上准备花和信。',
+          timestamp: Date.parse('2026-08-18T11:05:00Z')
+        }]
+      });
+      const content = context.segments[1]?.messages[0]?.content ?? '';
+      expect(formatRollingSummaryBeijingDateTime(Date.parse('2026-08-18T11:05:00Z')))
+        .toBe('2026年08月18日 19:05');
+      expect(content).toContain('本次更新时刻：2026年08月18日 20:30（北京时间）');
+      expect(content).toContain('【2026年08月18日 19:05（北京时间）】清瑶：明天晚上准备花和信。');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

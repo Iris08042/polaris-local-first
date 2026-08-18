@@ -247,9 +247,9 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
 
       <div className="es-rolling-body">
         <article className="es-rolling-intro">
-          <strong>长期稳定的理解，会随对话持续整理</strong>
-          <small>Long-term understanding</small>
-          <p>最近 {ROLLING_SUMMARY_RAW_CONTEXT_MESSAGE_COUNT} 条真实消息仍保留原文；记忆摘要每积累 {ROLLING_SUMMARY_TRIGGER_MESSAGE_COUNT} 条自动更新，也可以随时提前同步。</p>
+          <strong>长期理解与待办，会随对话一起整理</strong>
+          <small>Long-term memory and todos</small>
+          <p>最近 {ROLLING_SUMMARY_RAW_CONTEXT_MESSAGE_COUNT} 条真实消息仍保留原文；长期摘要与待办每积累 {ROLLING_SUMMARY_TRIGGER_MESSAGE_COUNT} 条同时更新，也可以随时提前同步。</p>
         </article>
 
         <article className="es-rolling-sheet es-rolling-model-settings">
@@ -375,7 +375,7 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
 
         <article className="es-rolling-sheet">
           <header>
-            <div><strong>当前摘要</strong><small>Current summary</small></div>
+            <div><strong>长期摘要与待办</strong><small>Memory and todos</small></div>
             <div className="es-rolling-header-actions">
               <time>{formatUpdatedAt(summary?.updatedAt)}</time>
               <button
@@ -403,7 +403,7 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
             </div>
           ) : (
             <div className={summary?.content ? 'has-summary' : 'is-empty'}>
-              {summary?.content || '尚未生成记忆摘要。点击“立即同步一次”即可从现有聊天重建。'}
+              {summary?.content || '尚未生成长期摘要与待办。点击“立即同步一次”即可从现有聊天整理。'}
             </div>
           )}
         </article>
@@ -451,7 +451,7 @@ export function RollingSummaryPage({ onBack }: { onBack: () => void }) {
           <small>{running ? 'Updating' : 'Sync now'}</small>
         </button>
         {notice ? <p className="es-rolling-notice" role="status">{notice}</p> : null}
-        <p className="es-rolling-footnote">手动同步会提前处理新对话并重新累计 50 条；编辑摘要或提示词不会改变计数。具体长期事实仍由 Ombre Brain 保存。</p>
+        <p className="es-rolling-footnote">手动同步会同时整理长期摘要与待办，并重新累计 50 条；编辑记录或提示词不会改变计数。具体长期事实仍由 Ombre Brain 保存。</p>
       </div>
     </section>
   );

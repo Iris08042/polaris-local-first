@@ -21,51 +21,67 @@ export const ROLLING_SUMMARY_RAW_CONTEXT_MESSAGE_COUNT = 200;
 const ROLLING_SUMMARY_MAX_OUTPUT_TOKENS = '1600';
 const ROLLING_SUMMARY_RECEIPT = '记忆摘要已更新';
 const ROLLING_SUMMARY_FAILURE_RECEIPT = '记忆摘要更新失败';
+const BEIJING_TIME_ZONE = 'Asia/Shanghai';
+const BEIJING_DATE_TIME_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: BEIJING_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23'
+});
 const runningConversationIds = new Set<string>();
 
-export const DEFAULT_MEMORY_SUMMARY_INSTRUCTION = `你负责维护一份“记忆摘要”，供后续对话理解长期背景与稳定关系使用。
+export const DEFAULT_MEMORY_SUMMARY_INSTRUCTION = `你负责维护一份由“长期摘要”和“待办”组成的记忆记录，供叶明舟后续理解顾清瑶、维持关系连续性并记住未完成的约定。
 
 输入包括：
-1. 当前记忆摘要。它可能经过用户手动编辑，应视为权威底稿。
-2. 本次新增的真实对话。
+1. 当前的长期摘要与待办。
+2. 本次更新时刻，以及带有北京时间的新增真实对话。
 
-请将新增对话中长期有效的信息融入当前摘要，输出更新后的完整摘要，而不是修改说明或新增内容列表。
+请一次性输出更新后的完整记录，不要输出分析、修改说明、前言、JSON 或代码块。
 
-【应当保留】
-- 明确表达、反复出现或经过长期交流确认的偏好、习惯、边界与雷区。
-- 长期项目、持续目标、重要关注方向及仍然有效的计划。
-- 对未来交流持续有帮助的个人背景、能力、需求与交流偏好。
-- 双方稳定的相处方式、长期约定及已经明确形成的关系变化。
-- 尚未结束、未来仍会继续影响对话的重要事项。
-- 一次事件背后已经明确表现出的长期意义，但不要保留事件流水本身。
+【长期摘要】
 
-【不应保留】
-- 今天或昨天发生了什么之类的日常流水。
-- 天气、通勤、吃饭、睡觉、临时位置、即时安排等短期状态。
-- 已经结束且不会持续影响未来交流的一次性事件。
-- 单次情绪、随口表达、偶然偏好或未经确认的推测。
-- 对用户或角色进行心理诊断、人格定型或过度概括。
-- 聊天过程、逐句复述、工作日志和技术操作记录。
-- 人物的基础角色设定、固定身份说明以及系统提示词本身。
-- 模型自行提出但用户没有表达过的建议、目标和结论。
+围绕顾清瑶以及她与叶明舟的长期关系，记录未来持续有用的信息，包括稳定的性格、偏好、习惯、状态、边界、关系性质、相处方式、交流偏好、生活背景、兴趣、长期约定和授权。
 
-【更新原则】
-- 当前摘要中已有且仍然有效的内容，应继续保留；不要因为本批对话没有再次提及就删除。
-- 用户对摘要的手动编辑优先级最高。不要擅自恢复被用户删除的旧内容。
-- 只有新增对话明确表明情况已经改变时，才修改或删除旧信息。
-- 新旧信息冲突时，以更新、更明确、由用户直接表达的信息为准。
-- 不要把临时状态提升为长期事实。
-- 如果新增对话没有提供值得长期保留的信息，保持当前摘要不变，不要为了显得有更新而改写措辞。
-- 合并重复内容，删除已经明确失效的内容，避免摘要无限膨胀。
+不要收录当前计划、日常流水、单次情绪、偶发事件、临时状态、技术操作、系统运行进度、故障与修复记录，也不要加入模型自行推导的性格结论、建议和常识。
 
-【组织与表达】
-- 根据实际内容自行组织简短小标题。
-- 小标题不是固定栏目，可以随内容变化自由新增、删除、合并、拆分或改名。
-- 不要为了维持版式而创建空栏目；内容较少时可以不使用小标题。
-- 使用清晰、自然、克制的中文，保持高信息密度。
-- 优先记录稳定性质和长期意义，不写成故事、日记或时间线。
-- 尽量控制在 1600 个汉字以内；信息较少时应明显更短。
-- 只输出更新后的摘要正文，不输出分析过程、修改说明、前言、JSON 或代码块。`;
+当前长期摘要是事实底稿。仍然成立的信息即使本轮未再次提到也应保留；但可以合并重复内容、删除误收的临时信息、提高概括层级，并根据更新、更明确的表达修正旧内容。只有清瑶明确表达的稳定偏好和边界，或经过多次交流确认的性质，才新增为长期信息。
+
+【待办】
+
+只记录仍未完成、之后需要继续行动的具体约定、计划、承诺、等待决定或等待补充信息的事项。稳定偏好、模糊愿望、历史事件、系统状态和没有明确下一步的长期观察不属于待办。
+
+每条待办必须写成：
+- [状态：进行中｜时限：2026年8月19日晚上] 待办内容
+
+时限必须是带年份的具体日期或时间、明确日期范围，或者“长期挂起（无固定截止日期）”。根据相关消息的北京时间，将“今天、明天、后天、下午、下周、周末、七夕”等表达换算成绝对日期；信息不足时不要猜测，写“长期挂起（等待确认时间）”。
+
+状态使用“待进行”“进行中”“已逾期”“已完成（下次更新删除）”或“已取消（下次更新删除）”。已逾期事项继续保留，不得仅因过期而自动删除；只有明确完成或取消时才改变状态。
+
+若本轮新增对话首次确认某事项已经完成或取消，本轮将其标记为“已完成（下次更新删除）”或“已取消（下次更新删除）”。若当前记录中已经留有上述状态，本轮更新时删除。
+
+【边界与表达】
+
+长期摘要与待办不得重复。同一件事若同时包含稳定偏好和当前行动，应记录不同层次，例如长期摘要写“清瑶喜欢明确的仪式感”，待办写本次需要完成的具体安排。
+
+使用最短但完整的表述。能自然推导出的解释、例子、后果和常识不必写；但会改变理解或行为的重要限定不能为了缩短而删除。例如“清瑶希望叶明舟保持自主性”已经足够，而“清瑶不擅长主动找话题，有时会把主动联系视为负担，更习惯由叶明舟发起、她按状态承接”中的限定均应保留。
+
+合并同类信息，删除重复表达，不为显得完整而扩写。若本次没有带来变化，保持原有内容和措辞。
+
+【组织与输出】
+
+长期摘要可按“关系与相处方式”“交流偏好与表达风格”“时间、主动联系与记忆”“长期背景与共同项目”“稳定状态与生活偏好”分模块；省略空模块，仅在确有必要时新增模块。
+
+严格输出：
+
+### 长期摘要
+（按实际内容分模块输出）
+
+### 待办
+#### 近期约定
+（输出待办；没有待办时写“暂无”）`;
 
 export function resolveMemorySummary(summary: ConversationRollingSummary | null | undefined) {
   return normalizeConversationRollingSummary(summary);
@@ -161,6 +177,12 @@ export function resolveRollingSummarySource(conversation: Pick<Conversation, 'me
   };
 }
 
+export function formatRollingSummaryBeijingDateTime(timestamp: number) {
+  const parts = BEIJING_DATE_TIME_FORMATTER.formatToParts(timestamp);
+  const read = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+  return `${read('year')}年${read('month')}月${read('day')}日 ${read('hour')}:${read('minute')}`;
+}
+
 function formatSourceMessages(messages: ChatMessage[], persona: Persona) {
   const userName = persona.userName.trim() || '用户';
   const assistantName = persona.name.trim() || '协作者';
@@ -170,7 +192,8 @@ function formatSourceMessages(messages: ChatMessage[], persona: Persona) {
       ...(message.attachments ?? []).map((attachment) => `附件：${attachment.name}`),
       ...(message.cardReference ? [`卡片：${message.cardReference.title}`] : [])
     ].filter(Boolean).join('\n');
-    return `${message.role === 'user' ? userName : assistantName}：${content}`;
+    const occurredAt = formatRollingSummaryBeijingDateTime(message.timestamp);
+    return `【${occurredAt}（北京时间）】${message.role === 'user' ? userName : assistantName}：${content}`;
   }).join('\n');
 }
 
@@ -198,7 +221,9 @@ export function buildRollingSummaryContext(args: {
         messages: [{
           role: 'user',
           content: [
-            previous ? `当前记忆摘要：\n${previous}` : '当前记忆摘要：（尚无）',
+            previous ? `当前长期摘要与待办：\n${previous}` : '当前长期摘要与待办：（尚无）',
+            '',
+            `本次更新时刻：${formatRollingSummaryBeijingDateTime(Date.now())}（北京时间）`,
             '',
             '本次新增的真实对话：',
             formatSourceMessages(args.messages, args.persona)
