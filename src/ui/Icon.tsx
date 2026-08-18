@@ -69,6 +69,7 @@ export type IconName =
   | 'promptTone'
   | 'promptRules'
   | 'inbox'
+  | 'heart'
   | 'feather'
   | 'zap'
   | 'compass';
@@ -644,6 +645,10 @@ export function Icon({ name, size = 18, color = 'currentColor' }: Props) {
     inbox: <>
       <path d="M4.5 14L7.2 14C7.7 14 8.15 14.3 8.35 14.75L9.15 16.5C9.35 16.95 9.8 17.25 10.3 17.25H13.7C14.2 17.25 14.65 16.95 14.85 16.5L15.65 14.75C15.85 14.3 16.3 14 16.8 14H19.5" fill="none" stroke={color} strokeWidth={strokeSoft} strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M5.5 6.5H18.5C19.05 6.5 19.5 6.95 19.5 7.5V18.5C19.5 19.05 19.05 19.5 18.5 19.5H5.5C4.95 19.5 4.5 19.05 4.5 18.5V7.5C4.5 6.95 4.95 6.5 5.5 6.5Z" fill="none" stroke={color} strokeWidth={strokeSoft} strokeLinejoin="round"/>
+    </>,
+    heart: <>
+      <path d="M12 20.1C10.1 18.45 5.2 14.35 5.2 9.75C5.2 7.2 6.82 5.55 9.05 5.55C10.35 5.55 11.4 6.2 12 7.2C12.6 6.2 13.65 5.55 14.95 5.55C17.18 5.55 18.8 7.2 18.8 9.75C18.8 14.35 13.9 18.45 12 20.1Z" fill="none" stroke={color} strokeWidth={strokeSoft} strokeLinejoin="round"/>
+      <path d="M7.75 11.9H10L11.05 9.75L12.65 14.1L13.8 11.9H16.25" fill="none" stroke={color} strokeWidth={strokeDetail} strokeLinecap="round" strokeLinejoin="round" opacity="0.72"/>
     </>,
     feather: <>
       <path d="M18 3.5C14.5 4 12 7 10.5 10C9 13 7.5 16 5 20" fill="none" stroke={color} strokeWidth={strokeSoft} strokeLinecap="round" strokeLinejoin="round"/>

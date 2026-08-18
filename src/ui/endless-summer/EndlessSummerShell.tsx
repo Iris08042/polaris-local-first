@@ -6,6 +6,7 @@ import {
 } from '../../app/heartbeat/heartbeatPolicyClient';
 import { HEARTBEAT_INBOX_CONFIG_CHANGED_EVENT } from '../../app/heartbeat/heartbeatInboxSettings';
 import { relationshipDays } from '../../app/endlessSummer/relationshipDays';
+import { fetchHealthSnapshot } from '../../app/health/healthClient';
 import { canCheckAndroidApkUpdate } from '../../app/android/androidApkUpdateRuntime';
 import { getDesktopLocalHostBridge } from '../../desktop/localHost';
 import { saveAsset } from '../../infrastructure/assetStore';
@@ -16,9 +17,10 @@ import { useAssetObjectUrl } from '../useAssetObjectUrl';
 import { OmbreMemoryPage } from './OmbreMemoryPage';
 import { RollingSummaryPage } from './RollingSummaryPage';
 import { FarmPage } from './FarmPage';
+import { HealthPage } from './HealthPage';
 
 type NavigationPage = 'chat' | 'memory' | 'home' | 'features' | 'settings';
-type PrimaryPage = NavigationPage | 'collection' | 'ombre' | 'rolling' | 'games' | 'farm';
+type PrimaryPage = NavigationPage | 'collection' | 'ombre' | 'rolling' | 'games' | 'farm' | 'health';
 type CollectionParentPage = 'features' | 'settings';
 type MobileConversationNavigation = Omit<DesktopAppSidebarProps, 'collapsed' | 'onToggleCollapsed'>;
 
@@ -102,6 +104,47 @@ function useHeartbeatMode() {
   return { mode, known, enabled };
 }
 
+function useHealthMode() {
+  const [status, setStatus] = useState('未接入');
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const snapshot = await fetchHealthSnapshot();
+        if (cancelled) return;
+        if (!snapshot.lastUploadAt) {
+          setStatus('等待首次同步');
+          return;
+        }
+        const uploadedAt = new Date(snapshot.lastUploadAt);
+        const now = new Date();
+        const sameDay = uploadedAt.getFullYear() === now.getFullYear()
+          && uploadedAt.getMonth() === now.getMonth()
+          && uploadedAt.getDate() === now.getDate();
+        const time = new Intl.DateTimeFormat('zh-CN', sameDay
+          ? { hour: '2-digit', minute: '2-digit', hour12: false }
+          : { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+          .format(uploadedAt);
+        setStatus(sameDay ? `今天 ${time} 已同步` : `数据较旧 · ${time}`);
+      } catch {
+        if (!cancelled) setStatus('未接入');
+      }
+    };
+    void load();
+    const handleVisible = () => { if (document.visibilityState === 'visible') void load(); };
+    window.addEventListener(HEARTBEAT_INBOX_CONFIG_CHANGED_EVENT, load);
+    document.addEventListener('visibilitychange', handleVisible);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(HEARTBEAT_INBOX_CONFIG_CHANGED_EVENT, load);
+      document.removeEventListener('visibilitychange', handleVisible);
+    };
+  }, []);
+
+  return status;
+}
+
 function ScreenHeading({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <header className="es-screen-heading">
@@ -116,6 +159,7 @@ function HubCard({
   icon,
   title,
   detail,
+  status,
   onClick,
   disabled = false,
   className = ''
@@ -123,6 +167,7 @@ function HubCard({
   icon: IconName;
   title: string;
   detail: string;
+  status?: string;
   onClick?: () => void;
   disabled?: boolean;
   className?: string;
@@ -136,7 +181,7 @@ function HubCard({
     >
       <Icon name={icon} size={28} />
       <span><strong>{title}</strong><small>{detail}</small></span>
-      {disabled ? <em>暂未开放</em> : <span className="es-chevron">›</span>}
+      {disabled ? <em>暂未开放</em> : status ? <em>{status}</em> : <span className="es-chevron">›</span>}
     </button>
   );
 }
@@ -255,19 +300,17 @@ function MemoryPage({ onOpenOmbre, onOpenRolling }: { onOpenOmbre: () => void; o
 function FeaturesPage({
   onOpenSettingsPage,
   onOpenCollectionShelf,
-  onOpenGames
-}: Pick<EndlessSummerShellProps, 'onOpenSettingsPage' | 'onOpenCollectionShelf'> & { onOpenGames: () => void }) {
+  onOpenGames,
+  onOpenHealth
+}: Pick<EndlessSummerShellProps, 'onOpenSettingsPage' | 'onOpenCollectionShelf'> & { onOpenGames: () => void; onOpenHealth: () => void }) {
   const heartbeat = useHeartbeatMode();
+  const healthStatus = useHealthMode();
   return (
     <section className="es-page es-scroll-page">
       <ScreenHeading title="功能" subtitle="我们可以一起做的事" />
-      <button type="button" className="es-feature-hero" onClick={() => onOpenSettingsPage('automation')}>
-        <Flower />
-        <span><strong>主动联系</strong><small>频率、时段与消息回流</small><em>{heartbeat.known ? heartbeat.enabled ? `当前 · ${heartbeat.mode}` : '主动消息已暂停' : '状态未知'}</em></span>
-        <Icon name="send" size={46} />
-        <b>›</b>
-      </button>
       <div className="es-feature-grid">
+        <HubCard icon="send" title="主动联系" detail="频率、时段与消息回流" status={heartbeat.known ? heartbeat.enabled ? `当前 · ${heartbeat.mode}` : '主动消息已暂停' : '状态未知'} onClick={() => onOpenSettingsPage('automation')} />
+        <HubCard icon="heart" title="身体近况" detail="睡眠、心率与活动" status={healthStatus} onClick={onOpenHealth} />
         <HubCard icon="cardStack" title="收藏与资料" detail="图片、文件和卡片" onClick={() => onOpenCollectionShelf('project')} />
         <HubCard icon="mcpService" title="外部工具" detail="MCP 与扩展能力" onClick={() => onOpenSettingsPage('mcp')} />
       </div>
@@ -475,6 +518,7 @@ function ConversationDrawer({ navigation, onClose, onOpen }: { navigation: Mobil
 
 export function EndlessSummerShell(props: EndlessSummerShellProps) {
   const [page, setPage] = useState<PrimaryPage>('home');
+  const [verifyHealthSync] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('healthSync') === '1');
   const [collectionParentPage, setCollectionParentPage] = useState<CollectionParentPage>('features');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -489,7 +533,15 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
     previousStartupReadyRef.current = props.startupReady;
     if (!props.startupReady) return;
     if (startupBecameReady) {
-      setPage('home');
+      const params = new URLSearchParams(window.location.search);
+      const openPage = params.get('open');
+      setPage(openPage === 'health' ? 'health' : 'home');
+      if (openPage) {
+        params.delete('open');
+        params.delete('healthSync');
+        const query = params.toString();
+        window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+      }
       return;
     }
     if (worldChanged) setPage(props.activeWorld === 'collection' ? 'collection' : 'chat');
@@ -519,7 +571,7 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
     ? collectionParentPage
     : page === 'ombre' || page === 'rolling'
       ? 'memory'
-      : page === 'games' || page === 'farm' ? 'features' : page;
+      : page === 'games' || page === 'farm' || page === 'health' ? 'features' : page;
 
   return (
     <div className={`es-shell es-page-${selectedNavPage}`}>
@@ -540,7 +592,8 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
       {page === 'memory' ? <MemoryPage onOpenOmbre={() => setPage('ombre')} onOpenRolling={() => setPage('rolling')} /> : null}
       {page === 'ombre' ? <OmbreMemoryPage onBack={() => setPage('memory')} /> : null}
       {page === 'rolling' ? <RollingSummaryPage onBack={() => setPage('memory')} /> : null}
-      {page === 'features' ? <FeaturesPage onOpenSettingsPage={props.onOpenSettingsPage} onOpenCollectionShelf={(shelf) => openCollectionShelf(shelf, 'features')} onOpenGames={() => setPage('games')} /> : null}
+      {page === 'features' ? <FeaturesPage onOpenSettingsPage={props.onOpenSettingsPage} onOpenCollectionShelf={(shelf) => openCollectionShelf(shelf, 'features')} onOpenGames={() => setPage('games')} onOpenHealth={() => setPage('health')} /> : null}
+      {page === 'health' ? <HealthPage onBack={() => setPage('features')} verifySync={verifyHealthSync} /> : null}
       {page === 'games' ? <GamesPage onBack={() => setPage('features')} onOpenFarm={() => setPage('farm')} /> : null}
       {page === 'farm' ? <FarmPage onBack={() => setPage('games')} onOpenAutomation={() => props.onOpenSettingsPage('automation')} /> : null}
       {page === 'settings' ? <SettingsPage collaboratorName={props.collaboratorName} customization={props.customization} setCustomization={props.setCustomization} onChooseImage={chooseImage} onOpenCollectionShelf={(shelf) => openCollectionShelf(shelf, 'settings')} onOpenSettingsPage={props.onOpenSettingsPage} onOpenProviderSettings={props.onOpenProviderSettings} /> : null}

@@ -3,6 +3,7 @@ import { useAndroidApkUpdateRuntime } from '../../app/android/useAndroidApkUpdat
 import { useDesktopWorkspaceAutoSync } from '../../app/desktop/useDesktopWorkspaceAutoSync';
 import { usePersistentStoreLifecycle } from '../../app/bootstrap/usePersistentStoreLifecycle';
 import { useManagedScheduledMessageMcp } from '../../app/scheduled-message/useManagedScheduledMessageMcp';
+import { useManagedHealthMcp } from '../../app/health/useManagedHealthMcp';
 import { useAppTriggerRuntime, type AppTriggerChatRuntimePort } from '../../app/shell/useAppTriggerRuntime';
 import type { AppLanguage } from '../../i18n';
 import { useDeveloperModeRuntime } from '../useDeveloperModeRuntime';
@@ -52,6 +53,7 @@ export function useAppRuntime({
   useViewportShellVars();
   useCompanionRuntime({ enabled: backgroundRuntimeReady });
   useManagedScheduledMessageMcp(backgroundRuntimeReady);
+  useManagedHealthMcp(backgroundRuntimeReady);
   useMcpCatalogHeartbeat({ enabled: backgroundRuntimeReady });
   useDesktopWorkspaceAutoSync();
   useAndroidApkUpdateRuntime({ enabled: backgroundRuntimeReady });
