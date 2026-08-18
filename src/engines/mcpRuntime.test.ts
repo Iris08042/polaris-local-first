@@ -284,6 +284,24 @@ describe('mcpRuntime', () => {
     expect(nativeRequestMock).toHaveBeenCalled();
   });
 
+  it('reports a native MCP abort as a 60 second catalog timeout', async () => {
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+    vi.mocked(Capacitor.getPlatform).mockReturnValue('ios');
+    vi.mocked(CapacitorHttp.request).mockRejectedValue(new Error('Fetch is aborted'));
+
+    const result = await resolveMcpToolCatalog({
+      servers: [createServer()],
+      timeoutSeconds: 300,
+      retryDelaysMs: [],
+      useCachedOnFailure: false
+    });
+
+    expect(result.tools).toEqual([]);
+    expect(result.errors).toEqual([
+      'Weather MCP：初始化 MCP 服务 Weather MCP 超时（60 秒）。'
+    ]);
+  });
+
   it('retries MCP catalog reads before hiding tools from the directory', async () => {
     let initializeAttempts = 0;
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {

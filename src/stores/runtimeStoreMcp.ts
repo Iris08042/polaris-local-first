@@ -17,7 +17,8 @@ type McpJsonPayload = {
 };
 
 const DEFAULT_MCP_SERVER_TRANSPORT: McpServerTransport = 'streamable-http';
-export const DEFAULT_MCP_TOOL_TIMEOUT_SECONDS = 30;
+const LEGACY_DEFAULT_MCP_TOOL_TIMEOUT_SECONDS = 30;
+export const DEFAULT_MCP_TOOL_TIMEOUT_SECONDS = 300;
 
 export const DEFAULT_RUNTIME_MCP_STATE: RuntimeMcpState = {
   mcpServers: [],
@@ -167,12 +168,16 @@ export function normalizeRuntimeMcpState(
         : { ...server, handle: nextHandle };
     });
 
+  const timeoutSeconds = normalizePositiveInt(
+    state?.mcpToolTimeoutSeconds,
+    DEFAULT_MCP_TOOL_TIMEOUT_SECONDS
+  );
+
   return {
     mcpServers: servers,
-    mcpToolTimeoutSeconds: normalizePositiveInt(
-      state?.mcpToolTimeoutSeconds,
-      DEFAULT_MCP_TOOL_TIMEOUT_SECONDS
-    )
+    mcpToolTimeoutSeconds: timeoutSeconds === LEGACY_DEFAULT_MCP_TOOL_TIMEOUT_SECONDS
+      ? DEFAULT_MCP_TOOL_TIMEOUT_SECONDS
+      : timeoutSeconds
   };
 }
 

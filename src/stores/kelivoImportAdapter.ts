@@ -963,7 +963,7 @@ async function convertKelivoZipToStructuredExportSnapshot(
   const collectionState = buildCollectionState();
   const spaceState = buildSpaceState(reconciledPersonaOwners.activeCollaboratorId, backgroundAssetByPersona, settings);
   const migratedSpaceState = migratePersistedSpaceState(spaceState);
-  const mcpToolTimeoutSeconds = Math.max(1, Math.floor((readNumber(readSetting(settings, 'mcp_request_timeout_ms_v1')) ?? 30_000) / 1000));
+  const mcpToolTimeoutSeconds = Math.max(1, Math.floor((readNumber(readSetting(settings, 'mcp_request_timeout_ms_v1')) ?? 300_000) / 1000));
   const runtimeState = normalizeRuntimePayload({
     providers,
     activeProviderId,

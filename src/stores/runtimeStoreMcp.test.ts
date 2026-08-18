@@ -34,10 +34,14 @@ describe('runtimeStoreMcp', () => {
       ]
     });
 
-    expect(state.mcpToolTimeoutSeconds).toBe(30);
+    expect(state.mcpToolTimeoutSeconds).toBe(300);
     expect(state.mcpServers[0]?.handle).toBe('demo');
     expect(state.mcpServers[1]?.handle).toBe('demo_2');
     expect(state.mcpServers[0]?.url).toBe('http://localhost:3000');
+  });
+
+  it('upgrades the legacy 30 second MCP timeout', () => {
+    expect(normalizeRuntimeMcpState({ mcpToolTimeoutSeconds: 30 }).mcpToolTimeoutSeconds).toBe(300);
   });
 
   it('serializes and parses json editor payloads', () => {

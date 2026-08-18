@@ -349,7 +349,7 @@ describe('commitRuntimeRowsMigrationFromCurrentPersistence', () => {
       })
     }));
     expect(settingsRow?.value.value).toEqual(expect.objectContaining({
-      mcpToolTimeoutSeconds: 30,
+      mcpToolTimeoutSeconds: 300,
       taskModeEnabled: true
     }));
     expect(mcpRow?.value.value).toEqual(expect.objectContaining({

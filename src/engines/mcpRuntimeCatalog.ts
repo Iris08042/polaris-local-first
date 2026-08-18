@@ -25,6 +25,8 @@ import {
 import { initializeLegacySseConnection } from './mcpRuntimeSse';
 
 const DEFAULT_MCP_CATALOG_RETRY_DELAYS_MS = [600, 1200, 2400] as const;
+const DEFAULT_MCP_TOOL_TIMEOUT_SECONDS = 300;
+const MCP_CATALOG_TIMEOUT_SECONDS = 60;
 
 type ToolsListResult = {
   tools?: Array<{
@@ -293,7 +295,7 @@ async function callToolViaLegacySse(
 function normalizeTimeoutMs(timeoutSeconds: number | undefined) {
   const seconds = typeof timeoutSeconds === 'number' && Number.isFinite(timeoutSeconds) && timeoutSeconds > 0
     ? timeoutSeconds
-    : 30;
+    : DEFAULT_MCP_TOOL_TIMEOUT_SECONDS;
   return Math.floor(seconds * 1000);
 }
 
@@ -382,7 +384,10 @@ export async function resolveMcpToolCatalog(args: {
     };
   }
 
-  const timeoutMs = normalizeTimeoutMs(args.timeoutSeconds);
+  const timeoutMs = Math.min(
+    normalizeTimeoutMs(args.timeoutSeconds),
+    MCP_CATALOG_TIMEOUT_SECONDS * 1000
+  );
   const retryDelaysMs = args.retryDelaysMs ?? DEFAULT_MCP_CATALOG_RETRY_DELAYS_MS;
   const results = await Promise.all(
     activeServers.map((server) =>

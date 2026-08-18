@@ -169,12 +169,20 @@ async function postStreamableJsonRpc(
       ...(options.sessionId ? { 'Mcp-Session-Id': options.sessionId } : {})
     });
 
-    return await requestMcpHttp(options.endpoint ?? options.server.url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    }, options);
+    try {
+      return await requestMcpHttp(options.endpoint ?? options.server.url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      }, options);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error ?? '');
+      if (controller.signal.aborted || /Fetch is aborted/i.test(message)) {
+        throw createTimeoutError(options.label, options.timeoutMs);
+      }
+      throw error;
+    }
   } finally {
     globalThis.clearTimeout(timeoutId);
   }
