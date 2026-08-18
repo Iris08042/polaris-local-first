@@ -17,7 +17,7 @@ import { useAssetObjectUrl } from '../useAssetObjectUrl';
 import { OmbreMemoryPage } from './OmbreMemoryPage';
 import { RollingSummaryPage } from './RollingSummaryPage';
 import { FarmPage } from './FarmPage';
-import { HealthPage } from './HealthPage';
+import { HEALTH_RETURN_PENDING_KEY, HealthPage } from './HealthPage';
 
 type NavigationPage = 'chat' | 'memory' | 'home' | 'features' | 'settings';
 type PrimaryPage = NavigationPage | 'collection' | 'ombre' | 'rolling' | 'games' | 'farm' | 'health';
@@ -535,7 +535,8 @@ export function EndlessSummerShell(props: EndlessSummerShellProps) {
     if (startupBecameReady) {
       const params = new URLSearchParams(window.location.search);
       const openPage = params.get('open');
-      setPage(openPage === 'health' ? 'health' : 'home');
+      const returningFromHealthSync = window.localStorage.getItem(HEALTH_RETURN_PENDING_KEY) === '1';
+      setPage(openPage === 'health' || returningFromHealthSync ? 'health' : 'home');
       if (openPage) {
         params.delete('open');
         params.delete('healthSync');

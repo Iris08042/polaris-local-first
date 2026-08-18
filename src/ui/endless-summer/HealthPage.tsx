@@ -4,6 +4,7 @@ import { Icon } from '../Icon';
 
 const SHORTCUT_NAME = '同步身体近况';
 const SYNC_BASELINE_KEY = 'endless-summer-health-sync-baseline';
+export const HEALTH_RETURN_PENDING_KEY = 'endless-summer-health-return-pending';
 
 type MetricRow = {
   key: string;
@@ -84,6 +85,8 @@ export function HealthPage({ onBack, verifySync }: { onBack: () => void; verifyS
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [verifyRequested, setVerifyRequested] = useState(() => verifySync
+    || window.localStorage.getItem(HEALTH_RETURN_PENDING_KEY) === '1');
   const pollRef = useRef<number | null>(null);
 
   const load = useCallback(async () => {
@@ -111,7 +114,7 @@ export function HealthPage({ onBack, verifySync }: { onBack: () => void; verifyS
   }, [load]);
 
   useEffect(() => {
-    if (!verifySync) return;
+    if (!verifyRequested) return;
     const baseline = Number(window.localStorage.getItem(SYNC_BASELINE_KEY) || 0);
     let attempts = 0;
     setMessage('正在确认服务器有没有收到新数据…');
@@ -121,10 +124,14 @@ export function HealthPage({ onBack, verifySync }: { onBack: () => void; verifyS
       if (next?.lastUploadAt && next.lastUploadAt > baseline) {
         setMessage('刚刚同步成功，下面是服务器收到的最新数据。');
         window.localStorage.removeItem(SYNC_BASELINE_KEY);
+        window.localStorage.removeItem(HEALTH_RETURN_PENDING_KEY);
+        setVerifyRequested(false);
         if (pollRef.current !== null) window.clearInterval(pollRef.current);
         pollRef.current = null;
       } else if (attempts >= 15) {
         setMessage('暂时没有收到新上传。请检查 HAE 自动化日志和网络后再试。');
+        window.localStorage.removeItem(HEALTH_RETURN_PENDING_KEY);
+        setVerifyRequested(false);
         if (pollRef.current !== null) window.clearInterval(pollRef.current);
         pollRef.current = null;
       }
@@ -135,10 +142,12 @@ export function HealthPage({ onBack, verifySync }: { onBack: () => void; verifyS
       if (pollRef.current !== null) window.clearInterval(pollRef.current);
       pollRef.current = null;
     };
-  }, [load, verifySync]);
+  }, [load, verifyRequested]);
 
   const runShortcut = () => {
     window.localStorage.setItem(SYNC_BASELINE_KEY, String(snapshot?.lastUploadAt || 0));
+    window.localStorage.setItem(HEALTH_RETURN_PENDING_KEY, '1');
+    setVerifyRequested(true);
     setMessage(`正在打开快捷指令“${SHORTCUT_NAME}”…`);
     window.location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}`;
   };
@@ -192,9 +201,9 @@ export function HealthPage({ onBack, verifySync }: { onBack: () => void; verifyS
           <ol>
             <li>在 HAE 建好上传到无尽夏的 REST API 自动化。</li>
             <li>在快捷指令新建“{SHORTCUT_NAME}”。</li>
-            <li>依次放入：打开 HAE、等待 1 秒、运行 HAE 自动化、等待上传、打开无尽夏身体近况页。</li>
+            <li>依次放入：打开 HAE、等待 1 秒、运行 HAE 自动化、等待上传、重新打开无尽夏。</li>
           </ol>
-          <p>快捷指令最后打开：<code>https://polaris.yichen888.top/?open=health&amp;healthSync=1</code></p>
+          <p>如果“打开 App”里没有无尽夏，就让快捷指令回到主屏幕，再手动点无尽夏；页面会继续验证本次同步。</p>
         </details>
       </div>
     </section>
