@@ -1,6 +1,7 @@
 import { createStoredAttachment } from '../infrastructure/assetStore';
 import { isDocxFile, isPdfFile, readDocumentAttachment } from './attachmentDocumentReaders';
 import { prepareStoredImageBlob } from './imageAssetProcessing';
+import { renderPdfPages } from './pdfTextReader';
 import { isCsvFile, isXlsxFile, readSpreadsheetAttachment } from './attachmentSpreadsheetReaders';
 import type { ChatAttachment } from '../types/domain';
 
@@ -124,6 +125,64 @@ function formatAttachmentStorageError(file: File, error: unknown) {
   return `${file.name} 保存失败：${message}`;
 }
 
+async function readPdfAsAttachments(file: File): Promise<{
+  attachments: ChatAttachment[];
+  warnings: string[];
+}> {
+  if (file.size > MAX_DOCUMENT_BYTES) {
+    throw new Error(`${file.name} 超过 8MB，先拆小一点再发更稳。`);
+  }
+
+  const buffer = await readFileAsArrayBuffer(file);
+  let documentAttachment: ChatAttachment | null = null;
+  try {
+    documentAttachment = await readDocumentAttachment({ file, buffer: buffer.slice(0) });
+  } catch (error) {
+    console.warn(`[pdf] text extraction skipped for ${file.name}`, error);
+  }
+
+  let renderedPages: Awaited<ReturnType<typeof renderPdfPages>> | null = null;
+  try {
+    renderedPages = await renderPdfPages(buffer.slice(0));
+  } catch (error) {
+    console.warn(`[pdf] visual page rendering skipped for ${file.name}`, error);
+  }
+
+  const attachments = [
+    documentAttachment ?? await createRawFileAttachment(file, 'application/pdf')
+  ];
+  const warnings: string[] = [];
+  let storedVisualPages = 0;
+
+  for (const page of renderedPages?.images ?? []) {
+    const pageName = `${file.name} · 第${page.pageNumber}页.jpg`;
+    try {
+      attachments.push(await createStoredAttachment({
+        kind: 'image',
+        name: pageName,
+        mimeType: 'image/jpeg',
+        blob: page.blob
+      }));
+      storedVisualPages += 1;
+    } catch (error) {
+      warnings.push(formatAttachmentStorageError(
+        new File([page.blob], pageName, { type: 'image/jpeg' }),
+        error
+      ));
+    }
+  }
+
+  if (renderedPages && storedVisualPages > 0 && storedVisualPages < renderedPages.pageCount) {
+    warnings.push(`${file.name} 共 ${renderedPages.pageCount} 页，已把其中 ${storedVisualPages} 页转成图片；要看其余页面请拆分 PDF 后再发。`);
+  } else if (storedVisualPages === 0) {
+    warnings.push(documentAttachment
+      ? `${file.name} 已提取文字，但页面图片没有转换成功；模型暂时看不到其中插图。`
+      : `${file.name} 已附上原始 PDF，但未能提取文字或转换页面图片；模型这轮只能看到文件名。`);
+  }
+
+  return { attachments, warnings };
+}
+
 export async function readFilesAsAttachments(files: FileList | File[]): Promise<{
   attachments: ChatAttachment[];
   rejected: string[];
@@ -155,29 +214,31 @@ export async function readFilesAsAttachments(files: FileList | File[]): Promise<
       continue;
     }
 
-    if (isPdfFile(file) || isDocxFile(file)) {
+    if (isPdfFile(file)) {
+      try {
+        const result = await readPdfAsAttachments(file);
+        attachments.push(...result.attachments);
+        warnings.push(...result.warnings);
+      } catch (error) {
+        try {
+          attachments.push(await createRawFileAttachment(file, 'application/pdf'));
+          warnings.push(`${file.name} 已附上原始 PDF，但页面解析没有成功；模型这轮只能看到文件名。`);
+        } catch (storageError) {
+          rejected.push(formatAttachmentStorageError(file, storageError));
+        }
+      }
+      continue;
+    }
+
+    if (isDocxFile(file)) {
       try {
         const attachment = await readStructuredDocumentAsAttachment(file);
         if (!attachment) {
-          if (isPdfFile(file)) {
-            attachments.push(await createRawFileAttachment(file, 'application/pdf'));
-            warnings.push(`${file.name} 已附上原始 PDF，但没有提取到可读文字；如果是扫描件，可以先 OCR 或复制正文再发。`);
-            continue;
-          }
           rejected.push(`${file.name} 里没有提取到可读文字，可能是扫描件或受保护文档。`);
           continue;
         }
         attachments.push(attachment);
       } catch (error) {
-        if (isPdfFile(file)) {
-          try {
-            attachments.push(await createRawFileAttachment(file, 'application/pdf'));
-            warnings.push(`${file.name} 已附上原始 PDF，但本机 PDF 解析器没有提取成功；模型这轮只能看到文件名。`);
-          } catch (storageError) {
-            rejected.push(formatAttachmentStorageError(file, storageError));
-          }
-          continue;
-        }
         rejected.push(error instanceof Error ? error.message : `${file.name} 读取失败。`);
       }
       continue;

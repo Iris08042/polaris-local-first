@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { createStoredAttachmentMock, readDocumentAttachmentMock } = vi.hoisted(() => ({
+const { createStoredAttachmentMock, readDocumentAttachmentMock, renderPdfPagesMock } = vi.hoisted(() => ({
   createStoredAttachmentMock: vi.fn(async (params: {
     kind: 'image' | 'file';
     name: string;
@@ -16,7 +16,8 @@ const { createStoredAttachmentMock, readDocumentAttachmentMock } = vi.hoisted(()
     size: params.blob.size,
     textContent: params.textContent
   })),
-  readDocumentAttachmentMock: vi.fn()
+  readDocumentAttachmentMock: vi.fn(),
+  renderPdfPagesMock: vi.fn()
 }));
 
 vi.mock('../infrastructure/assetStore', () => ({
@@ -28,6 +29,10 @@ vi.mock('./attachmentDocumentReaders', () => ({
     || file.name.toLowerCase().endsWith('.docx'),
   isPdfFile: (file: File) => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'),
   readDocumentAttachment: readDocumentAttachmentMock
+}));
+
+vi.mock('./pdfTextReader', () => ({
+  renderPdfPages: renderPdfPagesMock
 }));
 
 import { readFilesAsAttachments } from './attachmentProcessor';
@@ -71,6 +76,8 @@ describe('attachmentProcessor', () => {
   beforeEach(() => {
     createStoredAttachmentMock.mockClear();
     readDocumentAttachmentMock.mockReset();
+    renderPdfPagesMock.mockReset();
+    renderPdfPagesMock.mockResolvedValue({ pageCount: 0, images: [] });
   });
 
   it('stores zip uploads as file attachments without inline text', async () => {
@@ -156,7 +163,7 @@ describe('attachmentProcessor', () => {
 
     expect(result.rejected).toEqual([]);
     expect(result.warnings).toEqual([
-      'paper.pdf 已附上原始 PDF，但本机 PDF 解析器没有提取成功；模型这轮只能看到文件名。'
+      'paper.pdf 已附上原始 PDF，但未能提取文字或转换页面图片；模型这轮只能看到文件名。'
     ]);
     expect(result.attachments[0]).toMatchObject({
       kind: 'file',
@@ -181,13 +188,50 @@ describe('attachmentProcessor', () => {
 
     expect(result.rejected).toEqual([]);
     expect(result.warnings).toEqual([
-      'scan.pdf 已附上原始 PDF，但没有提取到可读文字；如果是扫描件，可以先 OCR 或复制正文再发。'
+      'scan.pdf 已附上原始 PDF，但未能提取文字或转换页面图片；模型这轮只能看到文件名。'
     ]);
     expect(result.attachments[0]).toMatchObject({
       kind: 'file',
       name: 'scan.pdf',
       mimeType: 'application/pdf'
     });
+  });
+
+  it('turns PDF pages into image attachments so vision models can inspect diagrams', async () => {
+    const file = new File(['pdf-bytes'], 'illustrated.pdf', { type: 'application/pdf' });
+    readDocumentAttachmentMock.mockResolvedValueOnce({
+      id: 'pdf-attachment',
+      assetId: 'pdf-asset',
+      kind: 'file',
+      name: file.name,
+      mimeType: file.type,
+      size: file.size,
+      textContent: '已提取的正文'
+    });
+    renderPdfPagesMock.mockResolvedValueOnce({
+      pageCount: 2,
+      images: [
+        { pageNumber: 1, blob: new Blob(['page-1'], { type: 'image/jpeg' }) },
+        { pageNumber: 2, blob: new Blob(['page-2'], { type: 'image/jpeg' }) }
+      ]
+    });
+
+    const result = await readFilesAsAttachments([file]);
+
+    expect(result.rejected).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(result.attachments).toHaveLength(3);
+    expect(result.attachments[0]).toMatchObject({ kind: 'file', name: 'illustrated.pdf' });
+    expect(createStoredAttachmentMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      kind: 'image',
+      name: 'illustrated.pdf · 第1页.jpg',
+      mimeType: 'image/jpeg'
+    }));
+    expect(createStoredAttachmentMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      kind: 'image',
+      name: 'illustrated.pdf · 第2页.jpg',
+      mimeType: 'image/jpeg'
+    }));
   });
 
   it('accepts large text attachments instead of rejecting them at 300KB', async () => {

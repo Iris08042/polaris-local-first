@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   createStoredAttachmentMock,
@@ -41,6 +41,7 @@ vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
 }));
 
 import { readDocumentAttachment } from './attachmentDocumentReaders';
+import { renderPdfPages } from './pdfTextReader';
 
 describe('readDocumentAttachment', () => {
   beforeEach(() => {
@@ -48,6 +49,10 @@ describe('readDocumentAttachment', () => {
     getDocumentMock.mockReset();
     globalWorkerOptions.workerSrc = '';
     globalWorkerOptions.workerPort = null;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('extracts PDF text with pdfjs and stores it as attachment text', async () => {
@@ -118,6 +123,49 @@ describe('readDocumentAttachment', () => {
 
     expect(result).toBeNull();
     expect(createStoredAttachmentMock).not.toHaveBeenCalled();
+    expect(destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders PDF pages as JPEG blobs for multimodal requests', async () => {
+    const destroy = vi.fn(async () => {});
+    const pageCleanup = vi.fn();
+    const render = vi.fn(() => ({ promise: Promise.resolve() }));
+    const canvas = {
+      width: 0,
+      height: 0,
+      toBlob: (callback: (blob: Blob | null) => void) => {
+        callback(new Blob(['jpeg-page'], { type: 'image/jpeg' }));
+      }
+    };
+    vi.stubGlobal('document', {
+      createElement: vi.fn(() => canvas)
+    });
+    getDocumentMock.mockReturnValue({
+      promise: Promise.resolve({
+        numPages: 1,
+        getPage: vi.fn(async () => ({
+          getViewport: ({ scale }: { scale: number }) => ({
+            width: 600 * scale,
+            height: 800 * scale
+          }),
+          render,
+          cleanup: pageCleanup
+        }))
+      }),
+      destroy
+    });
+
+    const result = await renderPdfPages(new Uint8Array([1, 2, 3]).buffer);
+
+    expect(result.pageCount).toBe(1);
+    expect(result.images).toHaveLength(1);
+    expect(result.images[0]).toMatchObject({ pageNumber: 1 });
+    expect(result.images[0]?.blob.type).toBe('image/jpeg');
+    expect(render).toHaveBeenCalledWith(expect.objectContaining({
+      canvas,
+      background: '#ffffff'
+    }));
+    expect(pageCleanup).toHaveBeenCalledTimes(1);
     expect(destroy).toHaveBeenCalledTimes(1);
   });
 });

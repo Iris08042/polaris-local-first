@@ -13,6 +13,10 @@ let pdfJsModulePromise: Promise<PdfJsModule> | null = null;
 let pdfJsWorkerModulePromise: Promise<PdfJsWorkerModule> | null = null;
 let pdfWorkerUrlPromise: Promise<PdfWorkerUrlModule> | null = null;
 
+export const MAX_PDF_VISUAL_PAGES = 12;
+const PDF_PAGE_RENDER_MAX_EDGE = 1600;
+const PDF_PAGE_JPEG_QUALITY = 0.84;
+
 function shouldForceMainThreadPdfWorker() {
   return (
     typeof (Array.prototype as { at?: unknown }).at !== 'function'
@@ -75,6 +79,27 @@ function flushPdfLine(target: string[], line: string) {
   }
 }
 
+function createPdfLoadingTask(pdfjs: PdfJsModule, buffer: ArrayBuffer) {
+  const documentOptions = {
+    data: new Uint8Array(buffer.slice(0)),
+    isEvalSupported: false,
+    enableScripting: false,
+    useSystemFonts: false,
+    useWorkerFetch: false,
+    stopAtErrors: false
+  } as Parameters<typeof pdfjs.getDocument>[0] & {
+    isEvalSupported: false;
+    enableScripting: false;
+  };
+  return pdfjs.getDocument(documentOptions);
+}
+
+function canvasToJpegBlob(canvas: HTMLCanvasElement) {
+  return new Promise<Blob | null>((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', PDF_PAGE_JPEG_QUALITY);
+  });
+}
+
 function extractPdfPageText(items: unknown[]) {
   const lines: string[] = [];
   let line = '';
@@ -118,18 +143,7 @@ function extractPdfPageText(items: unknown[]) {
 
 export async function readPdfText(buffer: ArrayBuffer): Promise<string> {
   const pdfjs = await loadPdfJs();
-  const documentOptions = {
-    data: new Uint8Array(buffer),
-    isEvalSupported: false,
-    enableScripting: false,
-    useSystemFonts: false,
-    useWorkerFetch: false,
-    stopAtErrors: false
-  } as Parameters<typeof pdfjs.getDocument>[0] & {
-    isEvalSupported: false;
-    enableScripting: false;
-  };
-  const loadingTask = pdfjs.getDocument(documentOptions);
+  const loadingTask = createPdfLoadingTask(pdfjs, buffer);
   const document = await loadingTask.promise;
 
   try {
@@ -148,6 +162,54 @@ export async function readPdfText(buffer: ArrayBuffer): Promise<string> {
     }
 
     return pages.join('\n\n').trim();
+  } finally {
+    await loadingTask.destroy();
+  }
+}
+
+export async function renderPdfPages(
+  buffer: ArrayBuffer,
+  maxPages = MAX_PDF_VISUAL_PAGES
+): Promise<{
+  pageCount: number;
+  images: Array<{ pageNumber: number; blob: Blob }>;
+}> {
+  if (typeof document === 'undefined') {
+    return { pageCount: 0, images: [] };
+  }
+
+  const pdfjs = await loadPdfJs();
+  const loadingTask = createPdfLoadingTask(pdfjs, buffer);
+  const pdf = await loadingTask.promise;
+
+  try {
+    const images: Array<{ pageNumber: number; blob: Blob }> = [];
+    const renderCount = Math.min(pdf.numPages, Math.max(0, Math.floor(maxPages)));
+
+    for (let pageNumber = 1; pageNumber <= renderCount; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      try {
+        const baseViewport = page.getViewport({ scale: 1 });
+        const scale = Math.min(2, PDF_PAGE_RENDER_MAX_EDGE / Math.max(baseViewport.width, baseViewport.height));
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.ceil(viewport.width));
+        canvas.height = Math.max(1, Math.ceil(viewport.height));
+        await page.render({ canvas, viewport, background: '#ffffff' }).promise;
+        const blob = await canvasToJpegBlob(canvas);
+        canvas.width = 1;
+        canvas.height = 1;
+        if (blob) {
+          images.push({ pageNumber, blob });
+        }
+      } catch (error) {
+        console.warn(`[pdf] page ${pageNumber} image render skipped`, error);
+      } finally {
+        page.cleanup();
+      }
+    }
+
+    return { pageCount: pdf.numPages, images };
   } finally {
     await loadingTask.destroy();
   }
