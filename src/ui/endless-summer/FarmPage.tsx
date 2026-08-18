@@ -32,10 +32,11 @@ const FARM_PROTOCOL_OPTIONS: Array<{ value: ProviderProtocol; label: string }> =
 ];
 
 const EMPTY_CONFIG: FarmPublicConfig = {
-  version: 2,
+  version: 3,
   humanUrl: 'https://farm.catmemo.fun/',
   agentKeyConfigured: false,
   autonomousEnabled: false,
+  longTermGoal: '',
   protocol: 'openai-completions',
   baseUrl: '',
   path: getDefaultProviderPath('openai-completions'),
@@ -58,6 +59,7 @@ export function FarmPage({ onBack, onOpenAutomation }: FarmPageProps) {
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState('');
   const [autonomousEnabled, setAutonomousEnabled] = useState(false);
+  const [longTermGoal, setLongTermGoal] = useState('');
   const [tools, setTools] = useState<FarmTool[]>([]);
   const [enabledToolNames, setEnabledToolNames] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
@@ -76,6 +78,7 @@ export function FarmPage({ onBack, onOpenAutomation }: FarmPageProps) {
     setPath(next.path);
     setModel(next.model);
     setAutonomousEnabled(next.autonomousEnabled);
+    setLongTermGoal(next.longTermGoal || '');
     setEnabledToolNames(next.enabledToolNames);
   };
 
@@ -192,6 +195,7 @@ export function FarmPage({ onBack, onOpenAutomation }: FarmPageProps) {
         humanUrl: humanUrl.trim(),
         agentKey: agentKey.trim() || undefined,
         autonomousEnabled,
+        longTermGoal: longTermGoal.trim(),
         protocol,
         baseUrl: baseUrl.trim(),
         path: path.trim(),
@@ -263,6 +267,16 @@ export function FarmPage({ onBack, onOpenAutomation }: FarmPageProps) {
             <i className={autonomousEnabled ? 'on' : ''}><u /></i>
           </button>
           <button type="button" className="es-farm-link" onClick={onOpenAutomation}>主动联系的频率与时段仍在原设置里管理 ›</button>
+          <label className="es-farm-goal">
+            <span>共同经营目标</span>
+            <textarea
+              value={longTermGoal}
+              maxLength={2000}
+              onChange={(event) => { setLongTermGoal(event.target.value); clearSaveResult(); }}
+              placeholder="例如：一起补全图鉴、探索隐藏内容，并分享值得纪念的新发现。"
+            />
+            <small>聊天与主动醒来会共同遵循；本轮要求是优先事项，只有明确限制才会收窄行动。</small>
+          </label>
         </section>
 
         <section className="es-farm-panel">

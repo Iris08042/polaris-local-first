@@ -278,8 +278,10 @@
 .es-farm-panel > header em { padding: 4px 8px; border-radius: 999px; color: #8a766d; background: rgba(255,255,255,.5); font: 9px system-ui, sans-serif; font-style: normal; }
 .es-farm-panel > label { display: grid; gap: 6px; margin-top: 11px; }
 .es-farm-panel > label > span { color: #706761; font: 11px system-ui, sans-serif; }
-.es-farm-panel > label > input, .es-farm-panel > label > select { box-sizing: border-box; min-width: 0; width: 100%; height: 45px; padding: 0 13px; border: 1px solid rgba(126,105,94,.15); outline: 0; border-radius: 14px; color: var(--es-ink); background: rgba(255,255,255,.55); font: 13px system-ui, sans-serif; text-overflow: ellipsis; }
-.es-farm-panel > label > input:focus, .es-farm-panel > label > select:focus { border-color: rgba(185,95,120,.38); box-shadow: 0 0 0 3px rgba(185,95,120,.08); }
+.es-farm-panel > label > input, .es-farm-panel > label > select, .es-farm-panel > label > textarea { box-sizing: border-box; min-width: 0; width: 100%; border: 1px solid rgba(126,105,94,.15); outline: 0; border-radius: 14px; color: var(--es-ink); background: rgba(255,255,255,.55); font: 13px system-ui, sans-serif; }
+.es-farm-panel > label > input, .es-farm-panel > label > select { height: 45px; padding: 0 13px; text-overflow: ellipsis; }
+.es-farm-panel > label > textarea { min-height: 145px; padding: 12px 13px; resize: vertical; line-height: 1.55; }
+.es-farm-panel > label > input:focus, .es-farm-panel > label > select:focus, .es-farm-panel > label > textarea:focus { border-color: rgba(185,95,120,.38); box-shadow: 0 0 0 3px rgba(185,95,120,.08); }
 .es-farm-secondary, .es-farm-save { min-height: 45px; border: 1px solid rgba(184,101,119,.22); border-radius: 14px; color: #96576a; background: rgba(255,255,255,.53); font: 12px system-ui, sans-serif; }
 .es-farm-panel > .es-farm-secondary { width: 100%; margin-top: 13px; }
 .es-farm-button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 13px; }
@@ -293,6 +295,8 @@
 .es-farm-toggle-row i.on { background: #9aaa8d; }
 .es-farm-toggle-row i.on u { transform: translateX(20px); }
 .es-farm-link { width: 100%; margin-top: 13px; padding: 9px 0 0; border: 0; border-top: 1px solid rgba(118,100,86,.1); color: #936170; background: transparent; text-align: left; font: 10px system-ui, sans-serif; }
+.es-farm-panel > .es-farm-goal { margin-top: 16px; padding-top: 13px; border-top: 1px solid rgba(118,100,86,.1); }
+.es-farm-goal > small { color: var(--es-muted); font: 9px/1.5 system-ui, sans-serif; }
 .es-farm-tools { display: grid; gap: 8px; max-height: 290px; overflow-y: auto; }
 .es-farm-tools label { padding: 9px 10px; border-radius: 13px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 10px; background: rgba(255,255,255,.38); }
 .es-farm-tools input { width: 17px; height: 17px; accent-color: #b96b80; }

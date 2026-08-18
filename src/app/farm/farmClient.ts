@@ -12,6 +12,7 @@ export type FarmPublicConfig = {
   humanUrl: string;
   agentKeyConfigured: boolean;
   autonomousEnabled: boolean;
+  longTermGoal: string;
   protocol: ProviderProtocol;
   baseUrl: string;
   path: string;
@@ -24,6 +25,7 @@ export type FarmConfigDraft = {
   humanUrl: string;
   agentKey?: string;
   autonomousEnabled: boolean;
+  longTermGoal: string;
   protocol: ProviderProtocol;
   baseUrl: string;
   path: string;
