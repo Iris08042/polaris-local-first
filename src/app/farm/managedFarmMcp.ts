@@ -17,11 +17,11 @@ export function buildManagedFarmMcpServer(url: string, token: string): McpServer
     headers: [{ id: 'farm-authorization', key: 'Authorization', value: `Bearer ${token.trim()}` }],
     tools: [{
       name: 'farm_agent',
-      description: '让专用农场代理查看或经营我们的农场',
+      description: '委托专用农场代理自主查看和经营；开放式请求默认允许查看后继续处理当前合理事项，只有明确要求只看时才只查看',
       inputSchema: {
         type: 'object',
         properties: {
-          instruction: { type: 'string' },
+          instruction: { type: 'string', description: '完整保留用户的经营意图、开放授权与明确限制，不要收窄成最低动作' },
           context: { type: 'string' }
         },
         required: ['instruction'],
