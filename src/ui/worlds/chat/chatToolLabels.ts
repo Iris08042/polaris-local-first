@@ -1,9 +1,18 @@
 import type { ToolInvocation } from '../../../types/domain';
 import type { I18nTranslator } from '../../../i18n';
+import { MANAGED_SCHEDULED_MESSAGE_MCP_SERVER_ID } from '../../../app/scheduled-message/managedScheduledMessageMcp';
 
 type ToolLabelKey = Parameters<I18nTranslator['t']>[0];
 type ToolLabelValues = Parameters<I18nTranslator['t']>[1];
 type ToolLabelTranslator = I18nTranslator['t'];
+
+function scheduledMessageReceipt(tool: ToolInvocation) {
+  if (tool.mcpResult?.serverId !== MANAGED_SCHEDULED_MESSAGE_MCP_SERVER_ID) return '';
+  const result = tool.mcpResult.structuredContent;
+  if (!result || typeof result !== 'object' || Array.isArray(result)) return '';
+  const receipt = (result as Record<string, unknown>).receipt;
+  return typeof receipt === 'string' ? receipt.trim() : '';
+}
 
 function localizeToolLabel(
   t: ToolLabelTranslator | undefined,
@@ -169,6 +178,8 @@ export function toolEventCopy(tool: ToolInvocation, t?: ToolLabelTranslator) {
 }
 
 export function compactToolEventSummary(tool: ToolInvocation, t?: ToolLabelTranslator) {
+  const scheduledReceipt = scheduledMessageReceipt(tool);
+  if (scheduledReceipt) return scheduledReceipt;
   const title = tool.title.trim();
   const summary = tool.summary.trim();
   const titleWithSummary = (fallback: string) => {

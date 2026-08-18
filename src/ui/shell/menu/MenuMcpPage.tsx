@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { McpServerConfig } from '../../../types/domain';
 import { isManagedFarmMcpServer } from '../../../app/farm/managedFarmMcp';
+import { isManagedScheduledMessageMcpServer } from '../../../app/scheduled-message/managedScheduledMessageMcp';
 import { buildMcpHandle } from '../../../engines/mcpHandle';
 import { useI18n } from '../../../i18n/useI18n';
 import { Icon } from '../../Icon';
@@ -35,11 +36,15 @@ export function MenuMcpPage({
   const [jsonEditorOpen, setJsonEditorOpen] = useState(false);
   const [timeoutSheetOpen, setTimeoutSheetOpen] = useState(false);
   const visibleServers = useMemo(
-    () => mcpServers.filter((server) => !isManagedFarmMcpServer(server)),
+    () => mcpServers.filter((server) => (
+      !isManagedFarmMcpServer(server) && !isManagedScheduledMessageMcpServer(server)
+    )),
     [mcpServers]
   );
   const managedServers = useMemo(
-    () => mcpServers.filter(isManagedFarmMcpServer),
+    () => mcpServers.filter((server) => (
+      isManagedFarmMcpServer(server) || isManagedScheduledMessageMcpServer(server)
+    )),
     [mcpServers]
   );
 

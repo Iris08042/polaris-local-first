@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { buildMcpHandle } from '../../../../engines/mcpHandle';
+import { isManagedScheduledMessageMcpServer } from '../../../../app/scheduled-message/managedScheduledMessageMcp';
 import { useI18n } from '../../../../i18n/useI18n';
 import type { McpServerConfig } from '../../../../types/domain';
 import { Icon } from '../../../Icon';
@@ -33,20 +34,24 @@ export function PersonaMcpSettingsPage({
   const selectedServerIds = activePersona?.mcp?.serverIds ?? [];
   const selectedIdSet = useMemo(() => new Set(selectedServerIds), [selectedServerIds]);
   const followsGlobal = activePersona?.mcp?.inheritGlobal !== false;
+  const visibleMcpServers = useMemo(
+    () => mcpServers.filter(server => !isManagedScheduledMessageMcpServer(server)),
+    [mcpServers]
+  );
   const selectedServers = useMemo(
-    () => mcpServers
+    () => visibleMcpServers
       .filter((server) => selectedIdSet.has(server.id))
       .sort((left, right) => left.name.localeCompare(right.name, language)),
-    [language, mcpServers, selectedIdSet]
+    [language, selectedIdSet, visibleMcpServers]
   );
   const availableServers = useMemo(
-    () => mcpServers
+    () => visibleMcpServers
       .filter((server) => !selectedIdSet.has(server.id))
       .sort((left, right) => left.name.localeCompare(right.name, language)),
-    [language, mcpServers, selectedIdSet]
+    [language, selectedIdSet, visibleMcpServers]
   );
-  const activeGlobalCount = mcpServers.filter((server) => server.isActive).length;
-  const editingServer = mcpServers.find((server) => server.id === editingServerId) ?? null;
+  const activeGlobalCount = visibleMcpServers.filter((server) => server.isActive).length;
+  const editingServer = visibleMcpServers.find((server) => server.id === editingServerId) ?? null;
 
   const setFollowsGlobal = (next: boolean) => {
     onUpdatePersona({ mcp: { inheritGlobal: next } });
@@ -76,7 +81,7 @@ export function PersonaMcpSettingsPage({
       <div className="memory-toggle memory-toggle--switch persona-mcp-follow-toggle">
         <div className="memory-toggle-copy">
           <strong>{t('request.mcp.followGlobalTitle')}</strong>
-          <span>{t('request.mcp.followGlobalDetail', { enabled: activeGlobalCount, total: mcpServers.length })}</span>
+          <span>{t('request.mcp.followGlobalDetail', { enabled: activeGlobalCount, total: visibleMcpServers.length })}</span>
         </div>
         <button
           type="button"

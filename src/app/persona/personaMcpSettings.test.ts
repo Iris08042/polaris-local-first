@@ -73,4 +73,16 @@ describe('resolvePersonaMcpServers', () => {
 
     expect(resolvePersonaMcpServers({ persona, mcpServers: [...servers, farm] })).toEqual([farm]);
   });
+
+  it('keeps the product-managed scheduled message tool available to a collaborator with a personal set', () => {
+    const persona = createPersonaTemplate({
+      id: 'persona-scheduled',
+      name: 'Scheduled',
+      description: '',
+      mcp: { inheritGlobal: false, serverIds: [] }
+    });
+    const scheduled = createServer('polaris-scheduled-message');
+
+    expect(resolvePersonaMcpServers({ persona, mcpServers: [...servers, scheduled] })).toEqual([scheduled]);
+  });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toolEventCopy } from './chatToolLabels';
+import { compactToolEventSummary, toolEventCopy } from './chatToolLabels';
 import type { ToolInvocation } from '../../../types/domain';
 
 function baseToolInvocation(partial: Partial<ToolInvocation>): ToolInvocation {
@@ -25,5 +25,21 @@ describe('chatToolLabels', () => {
       themeScope: 'app',
       status: 'applied'
     }))).toContain('这一版改动已保留');
+  });
+
+  it('shows the scheduled message confirmation beneath the assistant reply', () => {
+    expect(compactToolEventSummary(baseToolInvocation({
+      kind: 'invokeMcpTool',
+      status: 'executed',
+      mcpResult: {
+        serverId: 'polaris-scheduled-message',
+        serverName: '定时主动消息',
+        toolName: 'scheduled_message',
+        argumentsObject: { action: 'create' },
+        structuredContent: {
+          receipt: '主动消息已设置在 2026年8月19日 09:00'
+        }
+      }
+    }))).toBe('主动消息已设置在 2026年8月19日 09:00');
   });
 });

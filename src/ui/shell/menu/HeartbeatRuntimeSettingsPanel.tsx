@@ -236,7 +236,7 @@ export function HeartbeatRuntimeSettingsPanel({ section }: HeartbeatRuntimeSetti
       <header className="heartbeat-policy__header">
         <div>
           <h3>{section === 'model' ? '模型' : section === 'prompt' ? '提示词' : '心跳模型与提示词'}</h3>
-          <p>{section === 'prompt' ? '决定叶明舟何时、如何主动联系你。' : '这里的模型只供主动消息使用，不影响普通聊天。'}</p>
+          <p>{section === 'prompt' ? '决定叶明舟何时、如何主动联系你。' : '这里的模型供主动唤醒和定时消息到点生成使用，不影响普通聊天。'}</p>
         </div>
         <button className="mcp-btn" type="button" onClick={() => void load()} disabled={loading || busy}>刷新</button>
       </header>
